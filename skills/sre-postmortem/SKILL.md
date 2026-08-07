@@ -45,6 +45,15 @@ servicenow_search_change_requests(start_after=..., start_before=...)
 **Cada afirmação da timeline precisa de uma entrada que a sustente.** Esta é a
 diferença entre um post-mortem e uma história plausível.
 
+> ⚠️ **Quem escreveu a narrativa é mau juiz da própria precisão.** Depois de
+> montar a cronologia, você já acredita nela — reler o próprio texto encontra
+> muito menos erro do que deveria. Se o runtime permitir, faça a verificação
+> num contexto separado: entregue o documento e as saídas brutas das tools, e
+> peça para conferir cada afirmação contra a evidência, sem ter visto a
+> redação acontecer. Sem essa possibilidade, o substituto é mecânico —
+> percorra afirmação por afirmação e aponte a entrada que a sustenta; o que
+> não tiver, marque como estimado.
+
 ```
 build_unified_timeline(user_id=..., session_id=..., padding_seconds=1800)
 ```

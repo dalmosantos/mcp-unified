@@ -79,7 +79,7 @@ Cinco níveis, do que funciona sem nada até o uso real.
 ### 1. Suíte de testes — sem credencial, sem rede
 
 ```bash
-.venv/bin/pytest -q          # 84 testes
+.venv/bin/pytest -q          # 86 testes
 .venv/bin/ruff check src/ tests/
 ```
 
@@ -240,6 +240,7 @@ qual escolher para qual pergunta, e quais armadilhas evitar. A divisão é por
 | [`sre-triage`](skills/sre-triage/SKILL.md) | "o monitor disparou, o que está acontecendo?" |
 | [`sre-user-impact`](skills/sre-user-impact/SKILL.md) | "quem foi afetado e o que a pessoa viveu?" |
 | [`sre-postmortem`](skills/sre-postmortem/SKILL.md) | "como registro isso para a próxima vez?" |
+| [`sre-setup`](skills/sre-setup/SKILL.md) | "por que voltou vazio?" — distingue configuração de ausência de dado |
 
 ```bash
 mkdir -p .claude/skills && cp -r skills/sre-* .claude/skills/

@@ -11,10 +11,16 @@ e quais armadilhas evitar.
 | [`sre-triage`](sre-triage/SKILL.md) | "o monitor disparou, o que está acontecendo?" | Datadog |
 | [`sre-user-impact`](sre-user-impact/SKILL.md) | "quem foi afetado e o que a pessoa viveu?" | correlação + FullStory |
 | [`sre-postmortem`](sre-postmortem/SKILL.md) | "como registro isso para a próxima vez?" | ServiceNow, SharePoint/Teams |
+| [`sre-setup`](sre-setup/SKILL.md) | "por que voltou vazio?" · "o que está configurado?" | diagnóstico |
 
 Dividir por provedor — uma skill "Datadog", outra "FullStory" — seria repetir a
 fragmentação que o servidor existe para eliminar. A correlação é o produto;
 ela não pertence a nenhum dos dois lados.
+
+`sre-setup` é a exceção de forma: não responde uma pergunta de investigação, e
+sim a pergunta que vem *antes* dela. Existe porque a falha nº 1 deste servidor
+é configuração — e ela se disfarça de resultado vazio, que parece "não houve
+impacto".
 
 ## Instalação
 
