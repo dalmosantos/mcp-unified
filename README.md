@@ -191,6 +191,22 @@ printf '%s\n' \
  | docker run -i --rm --env-file .env mcp-unified --profile ide --log-level ERROR
 ```
 
+## Skills de SRE
+
+Três skills em [`skills/`](skills/) ensinam um agente a usar bem as 73 tools —
+qual escolher para qual pergunta, e quais armadilhas evitar. A divisão é por
+**pergunta**, não por provedor:
+
+| Skill | Responde |
+|---|---|
+| [`sre-triage`](skills/sre-triage/SKILL.md) | "o monitor disparou, o que está acontecendo?" |
+| [`sre-user-impact`](skills/sre-user-impact/SKILL.md) | "quem foi afetado e o que a pessoa viveu?" |
+| [`sre-postmortem`](skills/sre-postmortem/SKILL.md) | "como registro isso para a próxima vez?" |
+
+```bash
+mkdir -p .claude/skills && cp -r skills/sre-* .claude/skills/
+```
+
 ## Correlação
 
 As três tools de correlação não conhecem provedor por nome — iteram sobre quem

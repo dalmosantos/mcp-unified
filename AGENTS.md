@@ -177,6 +177,18 @@ Ao corrigir um bug, adicione o teste que o teria pego. Os dois bugs corrigidos
 até aqui (`http.py` devolvendo `None` em erro sem corpo; entrada fora de janela)
 têm teste próprio.
 
+## Skills
+
+`skills/` contém três skills que ensinam um agente a *usar* o servidor. Elas
+são documentação que o modelo lê como verdade, então:
+
+- **Renomeou uma tool? Atualize a skill.** `tests/test_skills.py` varre cada
+  `SKILL.md` atrás de tools citadas e falha se alguma não existir mais.
+- A divisão é por **pergunta**, não por provedor. Uma skill "FullStory" isolada
+  recriaria a fragmentação que o servidor existe para eliminar.
+- `description` no frontmatter é o gatilho — inclua as frases que o usuário
+  realmente diria. O teste exige no mínimo 120 caracteres.
+
 ## Convenções
 
 - Nomes de tool em `snake_case` com prefixo de provedor: `fullstory_*`,
