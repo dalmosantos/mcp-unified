@@ -58,9 +58,7 @@ async def derive_session_window(
     return window.padded(padding_seconds) if padding_seconds else window
 
 
-def parse_window(
-    from_: str | None, to: str | None, *, uid: str | None = None
-) -> SessionWindow:
+def parse_window(from_: str | None, to: str | None, *, uid: str | None = None) -> SessionWindow:
     """Monta uma janela a partir de strings ISO8601 ou epoch."""
     start = _parse_moment(from_)
     end = _parse_moment(to) or datetime.now(timezone.utc)

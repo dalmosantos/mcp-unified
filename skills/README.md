@@ -1,6 +1,6 @@
 # Skills de SRE para o mcp-unified
 
-Três skills que ensinam um agente a **usar bem** as 73 tools do servidor. Elas
+Quatro skills que ensinam um agente a **usar bem** as 73 tools do servidor. Elas
 não adicionam capacidade — adicionam julgamento: qual tool para qual pergunta,
 e quais armadilhas evitar.
 

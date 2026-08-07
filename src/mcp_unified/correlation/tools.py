@@ -24,9 +24,7 @@ def register(server: Any, ctx: ServerContext) -> None:
 
     corr = ctx.settings.correlation
 
-    async def _window_for(
-        user_id: str, session_id: str, padding_seconds: int | None
-    ) -> Any:
+    async def _window_for(user_id: str, session_id: str, padding_seconds: int | None) -> Any:
         return await derive_session_window(
             ctx.session_provider,
             user_id,
@@ -82,9 +80,7 @@ def register(server: Any, ctx: ServerContext) -> None:
             uid=window.uid,
         )
 
-        log_sources = [
-            s for s in ctx.timeline_sources if s.source_name.endswith("-logs")
-        ]
+        log_sources = [s for s in ctx.timeline_sources if s.source_name.endswith("-logs")]
         if not log_sources:
             raise CorrelationError(
                 "Nenhuma fonte de logs registrada — configure o Datadog "
@@ -124,9 +120,7 @@ def register(server: Any, ctx: ServerContext) -> None:
             Field(description="Fontes a incluir; omita para todas as disponíveis"),
         ] = None,
         padding_seconds: Annotated[int | None, Field(description="Folga na janela")] = None,
-        limit_per_source: Annotated[
-            int, Field(description="Máximo por fonte", ge=1, le=500)
-        ] = 100,
+        limit_per_source: Annotated[int, Field(description="Máximo por fonte", ge=1, le=500)] = 100,
     ) -> Any:
         """Conta a história completa do que aconteceu, intercalando todas as fontes.
 
@@ -204,9 +198,7 @@ def register(server: Any, ctx: ServerContext) -> None:
         for resolver in ctx.subject_resolvers:
             try:
                 subjects.extend(
-                    await resolver.subjects_in_window(
-                        window, query=query, max_subjects=max_users
-                    )
+                    await resolver.subjects_in_window(window, query=query, max_subjects=max_users)
                 )
             except Exception as exc:  # noqa: BLE001
                 resolver_errors[resolver.source_name] = str(exc)
@@ -243,9 +235,7 @@ def register(server: Any, ctx: ServerContext) -> None:
         if provider is not None:
             for subject in ranked:
                 try:
-                    found = await provider.sessions_for_user(
-                        subject.id, limit=sessions_per_user
-                    )
+                    found = await provider.sessions_for_user(subject.id, limit=sessions_per_user)
                 except Exception as exc:  # noqa: BLE001
                     session_errors[subject.id] = str(exc)
                     continue

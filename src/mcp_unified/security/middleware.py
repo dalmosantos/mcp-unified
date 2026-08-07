@@ -56,8 +56,7 @@ class SecurityMiddleware:
         if not report.valid:
             logger.warning("validação rejeitou %s: %s", tool_name, report.errors)
             return _error(
-                "Argumentos rejeitados pela validação de conteúdo: "
-                + "; ".join(report.errors[:5])
+                "Argumentos rejeitados pela validação de conteúdo: " + "; ".join(report.errors[:5])
             )
 
         return await call_next(ctx)

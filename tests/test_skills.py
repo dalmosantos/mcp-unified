@@ -21,15 +21,29 @@ SKILLS_DIR = Path(__file__).parent.parent / "skills"
 # que se parecem com tool deste servidor, e não com parâmetro ou campo.
 _CITATION = re.compile(r"`([a-z][a-z0-9_]{6,})`|\b([a-z][a-z0-9_]{6,})\(")
 _TOOL_PREFIXES = {
-    "datadog", "fullstory", "servicenow", "msgraph",
-    "build", "find", "analyze", "correlate", "nl",
+    "datadog",
+    "fullstory",
+    "servicenow",
+    "msgraph",
+    "build",
+    "find",
+    "analyze",
+    "correlate",
+    "nl",
 }
 
 ALL_ENV = {
-    "FULLSTORY_API_KEY": "x", "DD_API_KEY": "x", "DD_APP_KEY": "x",
-    "SNOW_INSTANCE": "x", "SNOW_USERNAME": "x", "SNOW_PASSWORD": "x",
-    "MSGRAPH_TENANT_ID": "x", "MSGRAPH_CLIENT_ID": "x", "MSGRAPH_CLIENT_SECRET": "x",
-    "MCP_LLM_PROVIDER": "openai-compat", "MCP_LLM_BASE_URL": "http://fake/v1",
+    "FULLSTORY_API_KEY": "x",
+    "DD_API_KEY": "x",
+    "DD_APP_KEY": "x",
+    "SNOW_INSTANCE": "x",
+    "SNOW_USERNAME": "x",
+    "SNOW_PASSWORD": "x",
+    "MSGRAPH_TENANT_ID": "x",
+    "MSGRAPH_CLIENT_ID": "x",
+    "MSGRAPH_CLIENT_SECRET": "x",
+    "MCP_LLM_PROVIDER": "openai-compat",
+    "MCP_LLM_BASE_URL": "http://fake/v1",
 }
 
 
@@ -91,9 +105,7 @@ async def test_tools_citadas_existem(path: Path, monkeypatch: pytest.MonkeyPatch
 def test_readme_das_skills_lista_todas():
     readme = (SKILLS_DIR / "README.md").read_text(encoding="utf-8")
     for path in skill_files():
-        assert path.parent.name in readme, (
-            f"{path.parent.name} não aparece em skills/README.md"
-        )
+        assert path.parent.name in readme, f"{path.parent.name} não aparece em skills/README.md"
 
 
 # ------------------------------------------------- empacotamento como plugin
@@ -126,7 +138,8 @@ def test_plugin_e_marketplace_concordam():
 
 
 @pytest.mark.parametrize(
-    "path", sorted((Path(__file__).parent.parent / "agents").glob("*.md")),
+    "path",
+    sorted((Path(__file__).parent.parent / "agents").glob("*.md")),
     ids=lambda p: p.stem,
 )
 async def test_subagente_declara_tools_que_existem(path: Path, monkeypatch):

@@ -44,9 +44,7 @@ class AuthorizationError(ProviderError):
 class RateLimitError(ProviderError):
     """429 depois de esgotadas as retentativas."""
 
-    def __init__(
-        self, provider: str, message: str, *, retry_after: float | None = None
-    ) -> None:
+    def __init__(self, provider: str, message: str, *, retry_after: float | None = None) -> None:
         self.retry_after = retry_after
         super().__init__(provider, message, status_code=429)
 

@@ -71,9 +71,7 @@ def build_provider(settings: LLMSettings) -> LLMProvider:
     if settings.provider == "openai":
         from .providers.openai import OpenAIProvider
 
-        return OpenAIProvider(
-            model=model, api_key=settings.api_key, base_url=settings.base_url
-        )
+        return OpenAIProvider(model=model, api_key=settings.api_key, base_url=settings.base_url)
 
     from .providers.openai_compat import OpenAICompatProvider
 
@@ -82,6 +80,4 @@ def build_provider(settings: LLMSettings) -> LLMProvider:
             "MCP_LLM_BASE_URL é obrigatório com 'openai-compat' "
             "(ex: http://localhost:11434/v1 para Ollama)."
         )
-    return OpenAICompatProvider(
-        model=model, base_url=settings.base_url, api_key=settings.api_key
-    )
+    return OpenAICompatProvider(model=model, base_url=settings.base_url, api_key=settings.api_key)

@@ -55,9 +55,7 @@ def test_datadog_envia_as_duas_chaves():
 
 
 def test_datadog_remove_esquema_do_site():
-    settings = DatadogSettings(
-        DD_API_KEY="a", DD_APP_KEY="b", DD_SITE="https://us5.datadoghq.com"
-    )
+    settings = DatadogSettings(DD_API_KEY="a", DD_APP_KEY="b", DD_SITE="https://us5.datadoghq.com")
     assert settings.site == "us5.datadoghq.com"
 
 
@@ -70,9 +68,7 @@ def test_datadog_site_por_servico():
 
 
 def test_servicenow_completa_dominio_da_instancia():
-    settings = ServiceNowSettings(
-        SNOW_INSTANCE="dev12345", SNOW_USERNAME="u", SNOW_PASSWORD="p"
-    )
+    settings = ServiceNowSettings(SNOW_INSTANCE="dev12345", SNOW_USERNAME="u", SNOW_PASSWORD="p")
     assert settings.base_url == "https://dev12345.service-now.com"
 
 

@@ -306,12 +306,24 @@ async def test_entrada_fora_da_janela_nao_entra_na_timeline(fake_env):
             200,
             json={
                 "data": [
-                    {"id": "dentro", "attributes": {
-                        "timestamp": "2026-08-07T14:31:09Z", "service": "s",
-                        "status": "error", "message": "dentro da janela"}},
-                    {"id": "fora", "attributes": {
-                        "timestamp": "2026-08-07T18:00:00Z", "service": "s",
-                        "status": "error", "message": "muito depois"}},
+                    {
+                        "id": "dentro",
+                        "attributes": {
+                            "timestamp": "2026-08-07T14:31:09Z",
+                            "service": "s",
+                            "status": "error",
+                            "message": "dentro da janela",
+                        },
+                    },
+                    {
+                        "id": "fora",
+                        "attributes": {
+                            "timestamp": "2026-08-07T18:00:00Z",
+                            "service": "s",
+                            "status": "error",
+                            "message": "muito depois",
+                        },
+                    },
                 ]
             },
         )

@@ -160,7 +160,8 @@ def register(server: Any, ctx: ServerContext) -> None:
 
     async def nl_to_datadog_query(
         question: Annotated[
-            str, Field(description="A pergunta em português, ex 'erros de pagamento na última hora'")
+            str,
+            Field(description="A pergunta em português, ex 'erros de pagamento na última hora'"),
         ],
         target: Annotated[
             str, Field(description="Onde a consulta será usada: logs, rum ou spans")

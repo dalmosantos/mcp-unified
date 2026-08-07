@@ -144,9 +144,7 @@ def extract_session_meta(sorted_events: list[dict[str, Any]]) -> dict[str, Any]:
         sorted_events[0],
     )
     source_props = (
-        first_with_meta.get("source_properties")
-        or first_with_meta.get("sourceProperties")
-        or {}
+        first_with_meta.get("source_properties") or first_with_meta.get("sourceProperties") or {}
     )
     if not isinstance(source_props, dict):
         return empty
@@ -212,8 +210,7 @@ def generate_event_clustering(sorted_events: list[dict[str, Any]]) -> dict[str, 
 
     for entry in distribution.values():
         entry["categories"] = {
-            cat: round(count / entry["total"] * 100)
-            for cat, count in entry["categories"].items()
+            cat: round(count / entry["total"] * 100) for cat, count in entry["categories"].items()
         }
 
     clusters = []

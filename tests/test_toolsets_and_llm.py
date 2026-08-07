@@ -65,9 +65,14 @@ def test_perfil_desconhecido_lista_as_opcoes():
 async def test_contagem_de_tools_por_perfil(fake_env, monkeypatch):
     """Fixa os números que o README promete."""
     for key, value in {
-        "SNOW_INSTANCE": "dev", "SNOW_USERNAME": "u", "SNOW_PASSWORD": "p",
-        "MSGRAPH_TENANT_ID": "t", "MSGRAPH_CLIENT_ID": "c", "MSGRAPH_CLIENT_SECRET": "s",
-        "MCP_LLM_PROVIDER": "openai-compat", "MCP_LLM_BASE_URL": "http://fake/v1",
+        "SNOW_INSTANCE": "dev",
+        "SNOW_USERNAME": "u",
+        "SNOW_PASSWORD": "p",
+        "MSGRAPH_TENANT_ID": "t",
+        "MSGRAPH_CLIENT_ID": "c",
+        "MSGRAPH_CLIENT_SECRET": "s",
+        "MCP_LLM_PROVIDER": "openai-compat",
+        "MCP_LLM_BASE_URL": "http://fake/v1",
     }.items():
         monkeypatch.setenv(key, value)
 
@@ -127,9 +132,7 @@ async def test_analise_devolve_veredito_estruturado(fake_env, monkeypatch):
 
 
 @respx.mock
-async def test_analise_de_timeline_vazia_explica_em_vez_de_chamar_o_modelo(
-    fake_env, monkeypatch
-):
+async def test_analise_de_timeline_vazia_explica_em_vez_de_chamar_o_modelo(fake_env, monkeypatch):
     """Sem entradas não há o que analisar — e gastar token seria desperdício."""
     respx.mock.get(url__regex=r".*/v2/sessions/.+/events.*").mock(
         return_value=respx.MockResponse(

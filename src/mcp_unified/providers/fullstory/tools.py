@@ -259,12 +259,18 @@ def _register_core(server: Any, client: FullStoryClient, ctx: ServerContext) -> 
     async def fullstory_get_user_profile(
         user_identifier: Annotated[str, Field(description="uid ou e-mail do usuário")],
     ) -> Any:
-        """Perfil consolidado: dados do usuário mais suas sessões recentes."""
-        sessions = await client.list_sessions(
-            uid=user_identifier if "@" not in user_identifier else None,
-            email=user_identifier if "@" not in user_identifier else user_identifier,
-            limit=20,
-        )
+        """Perfil consolidado: dados do usuário mais suas sessões recentes.
+
+        Se o identificador contiver ``@`` é tratado como e-mail. Caso contrário,
+        tenta primeiro como uid e cai para e-mail caso não retorne nada — alguns
+        sistemas usam identificadores que parecem e-mail.
+        """
+        if "@" in user_identifier:
+            sessions = await client.list_sessions(email=user_identifier, limit=20)
+        else:
+            sessions = await client.list_sessions(uid=user_identifier, limit=20)
+            if not sessions:
+                sessions = await client.list_sessions(email=user_identifier, limit=20)
         return {"identifier": user_identifier, "sessions": sessions}
 
     async def fullstory_get_user_analytics(
@@ -484,7 +490,9 @@ def _register_write(server: Any, client: FullStoryClient, ctx: ServerContext) ->
 
     async def fullstory_create_segment_export(
         segment_id: Annotated[str, Field(description="ID do segmento a exportar")],
-        export_type: Annotated[str, Field(description="Tipo do export, ex: TYPE_EVENT")] = "TYPE_EVENT",
+        export_type: Annotated[
+            str, Field(description="Tipo do export, ex: TYPE_EVENT")
+        ] = "TYPE_EVENT",
         options: Annotated[dict[str, Any] | None, Field(description="Opções adicionais")] = None,
     ) -> Any:
         """Inicia um export de segmento. Assíncrono — acompanhe com get_segment_export_status."""

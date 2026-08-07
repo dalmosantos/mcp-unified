@@ -91,9 +91,7 @@ class DatadogClient(BaseApiClient):
     async def search_metrics(self, query: str) -> Any:
         # `/api/v1/search` é o endpoint de busca de métricas — é o que o
         # `listMetrics` do SDK em TS chama por baixo.
-        return await self._call(
-            "GET", "/api/v1/search", service="metrics", params={"q": query}
-        )
+        return await self._call("GET", "/api/v1/search", service="metrics", params={"q": query})
 
     async def get_metric_metadata(self, metric_name: str) -> Any:
         return await self._call(
@@ -151,9 +149,7 @@ class DatadogClient(BaseApiClient):
     # ------------------------------------------------------------------ logs
 
     async def search_logs(self, body: dict[str, Any]) -> Any:
-        return await self._call(
-            "POST", "/api/v2/logs/events/search", service="logs", json=body
-        )
+        return await self._call("POST", "/api/v2/logs/events/search", service="logs", json=body)
 
     async def aggregate_logs(self, body: dict[str, Any]) -> Any:
         return await self._call(
@@ -180,9 +176,7 @@ class DatadogClient(BaseApiClient):
         return await self._call("POST", "/api/v2/error-tracking/issues/search", json=body)
 
     async def get_error_tracking_issue(self, issue_id: str) -> Any:
-        return await self._call(
-            "GET", f"/api/v2/error-tracking/issues/{quote(issue_id, safe='')}"
-        )
+        return await self._call("GET", f"/api/v2/error-tracking/issues/{quote(issue_id, safe='')}")
 
     async def update_error_tracking_issue_state(self, issue_id: str, state: str) -> Any:
         return await self._call(
@@ -212,14 +206,10 @@ class DatadogClient(BaseApiClient):
     # ----------------------------------------------------- product analytics
 
     async def product_analytics_scalar(self, body: dict[str, Any]) -> Any:
-        return await self._call(
-            "POST", "/api/v2/product-analytics/analytics/scalar", json=body
-        )
+        return await self._call("POST", "/api/v2/product-analytics/analytics/scalar", json=body)
 
     async def product_analytics_timeseries(self, body: dict[str, Any]) -> Any:
-        return await self._call(
-            "POST", "/api/v2/product-analytics/analytics/timeseries", json=body
-        )
+        return await self._call("POST", "/api/v2/product-analytics/analytics/timeseries", json=body)
 
     async def product_analytics_query_users(self, body: dict[str, Any]) -> Any:
         return await self._call("POST", "/api/v2/product-analytics/users/query", json=body)

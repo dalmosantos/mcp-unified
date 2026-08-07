@@ -68,9 +68,7 @@ class OpenAICompatProvider:
 
             # Degrau 2: modo JSON genérico, com o schema descrito no prompt.
             if text is None:
-                logger.info(
-                    "endpoint não aceitou json_schema; caindo para modo JSON genérico"
-                )
+                logger.info("endpoint não aceitou json_schema; caindo para modo JSON genérico")
                 messages = [
                     {
                         "role": "system",
@@ -87,9 +85,7 @@ class OpenAICompatProvider:
                 text = await self._try(client, messages, None)
 
             if text is None:
-                raise ProviderError(
-                    self.name, "o endpoint não respondeu de forma utilizável"
-                )
+                raise ProviderError(self.name, "o endpoint não respondeu de forma utilizável")
 
             try:
                 return schema.model_validate_json(_strip_fences(text))

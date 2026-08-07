@@ -52,13 +52,17 @@ def resolve(
     if not uid:
         reason = "sem uid na janela — não há identidade para filtrar"
         if requested == "identity":
-            return ResolvedCorrelation(mode="identity", query=normalized_query, fallback_reason=reason)
+            return ResolvedCorrelation(
+                mode="identity", query=normalized_query, fallback_reason=reason
+            )
         return ResolvedCorrelation(mode="time", query=normalized_query, fallback_reason=reason)
 
     if not user_attr:
         reason = "FS_DD_USER_ATTR não configurado — não há atributo pelo qual filtrar"
         if requested == "identity":
-            return ResolvedCorrelation(mode="identity", query=normalized_query, fallback_reason=reason)
+            return ResolvedCorrelation(
+                mode="identity", query=normalized_query, fallback_reason=reason
+            )
         return ResolvedCorrelation(mode="time", query=normalized_query, fallback_reason=reason)
 
     return ResolvedCorrelation(mode="identity", query=compose_query(base_query, user_attr, uid))

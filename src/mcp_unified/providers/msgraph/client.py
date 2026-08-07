@@ -107,9 +107,7 @@ class MSGraphClient(BaseApiClient):
 
     # ------------------------------------------------------------------ Teams
 
-    async def list_channel_messages(
-        self, team_id: str, channel_id: str, *, top: int = 50
-    ) -> Any:
+    async def list_channel_messages(self, team_id: str, channel_id: str, *, top: int = 50) -> Any:
         return await self.graph_get(
             f"/teams/{team_id}/channels/{channel_id}/messages", params={"$top": top}
         )

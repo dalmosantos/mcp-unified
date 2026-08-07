@@ -221,8 +221,12 @@ async def test_prompt_do_llm_sai_sem_pii(fake_env, monkeypatch):
 async def test_servidor_sobe_sem_nenhuma_credencial(monkeypatch):
     """O caso mais comum na prática: ninguém tem os quatro provedores."""
     for key in (
-        "FULLSTORY_API_KEY", "DD_API_KEY", "DD_APP_KEY", "SNOW_INSTANCE",
-        "MSGRAPH_TENANT_ID", "MCP_LLM_PROVIDER",
+        "FULLSTORY_API_KEY",
+        "DD_API_KEY",
+        "DD_APP_KEY",
+        "SNOW_INSTANCE",
+        "MSGRAPH_TENANT_ID",
+        "MCP_LLM_PROVIDER",
     ):
         monkeypatch.delenv(key, raising=False)
 

@@ -32,9 +32,7 @@ class JWTTokenVerifier:
                 "aceitaria tokens emitidos para outros serviços."
             )
         if not settings.jwks_url:
-            raise ConfigurationError(
-                "MCP_AUTH_JWKS_URL é obrigatório com MCP_AUTH_ENABLED=true."
-            )
+            raise ConfigurationError("MCP_AUTH_JWKS_URL é obrigatório com MCP_AUTH_ENABLED=true.")
 
         try:
             from jwt import PyJWKClient

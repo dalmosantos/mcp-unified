@@ -44,9 +44,16 @@ def load(*parts: str) -> Any:
 def fake_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """FullStory + Datadog configurados; ServiceNow e Graph ausentes."""
     for key in (
-        "SNOW_INSTANCE", "SNOW_USERNAME", "SNOW_PASSWORD",
-        "MSGRAPH_TENANT_ID", "MSGRAPH_CLIENT_ID", "MSGRAPH_CLIENT_SECRET",
-        "MCP_LLM_PROVIDER", "SAFE_MODE", "MCP_TOOLSETS", "MCP_PROFILE",
+        "SNOW_INSTANCE",
+        "SNOW_USERNAME",
+        "SNOW_PASSWORD",
+        "MSGRAPH_TENANT_ID",
+        "MSGRAPH_CLIENT_ID",
+        "MSGRAPH_CLIENT_SECRET",
+        "MCP_LLM_PROVIDER",
+        "SAFE_MODE",
+        "MCP_TOOLSETS",
+        "MCP_PROFILE",
     ):
         monkeypatch.delenv(key, raising=False)
     for key, value in FAKE_ENV.items():

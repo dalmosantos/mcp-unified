@@ -75,8 +75,7 @@ class ServiceNowTimelineSource:
                     source=self.source_name,
                     kind="change_request",
                     summary=(
-                        f"🔧 {row.get('number', '?')} "
-                        f"{row.get('short_description', '')}"[:200]
+                        f"🔧 {row.get('number', '?')} {row.get('short_description', '')}"[:200]
                     ),
                     raw=row,
                 )
@@ -102,8 +101,7 @@ class ServiceNowTimelineSource:
                     source=self.source_name,
                     kind="incident",
                     summary=(
-                        f"🎫 {row.get('number', '?')} "
-                        f"{row.get('short_description', '')}"[:200]
+                        f"🎫 {row.get('number', '?')} {row.get('short_description', '')}"[:200]
                     ),
                     raw=row,
                 )
@@ -133,9 +131,7 @@ class ServiceNowTimelineSource:
             if caller:
                 seen[str(caller)] = seen.get(str(caller), 0) + 1
 
-        subjects = [
-            Subject(id=k, source=self.source_name, occurrences=v) for k, v in seen.items()
-        ]
+        subjects = [Subject(id=k, source=self.source_name, occurrences=v) for k, v in seen.items()]
         subjects.sort(key=lambda s: s.occurrences, reverse=True)
         return subjects[:max_subjects]
 
@@ -236,7 +232,12 @@ def register(server: Any, ctx: ServerContext) -> None:
         search: Annotated[str, Field(description="Termo a buscar no texto do artigo")],
         limit: Annotated[int, Field(description="Máximo de artigos", ge=1, le=100)] = 20,
     ) -> Any:
-        """Busca artigos da base de conhecimento — runbooks e procedimentos."""
+        """Busca artigos da base de conhecimento — runbooks e procedimentos.
+
+        A sanitização remove apenas o separador ``^`` da encoded query. Termos
+        que contenham outros operadores do ServiceNow (``=``, ``LIKE``, ``OR``)
+        podem alterar o sentido da busca; evite passá-los no termo de busca.
+        """
         escaped = search.replace("^", " ")
         return await client.query_table(
             TABLE_KB,

@@ -115,9 +115,7 @@ class DatadogLogsSource(_Base):
         body = {
             "filter": {"query": query, "from": _iso(window.start), "to": _iso(window.end)},
             "compute": [{"aggregation": "count", "type": "total"}],
-            "group_by": [
-                {"facet": self.user_attr, "limit": max_subjects, "total": False}
-            ],
+            "group_by": [{"facet": self.user_attr, "limit": max_subjects, "total": False}],
         }
         payload = await self._safe(self._client.aggregate_logs(body), "logs/aggregate")
         subjects: list[Subject] = []
@@ -128,9 +126,7 @@ class DatadogLogsSource(_Base):
                 continue
             computes = bucket.get("computes") or {}
             count = next((v for v in computes.values() if isinstance(v, (int, float))), 1)
-            subjects.append(
-                Subject(id=str(value), source=self.source_name, occurrences=int(count))
-            )
+            subjects.append(Subject(id=str(value), source=self.source_name, occurrences=int(count)))
         subjects.sort(key=lambda s: s.occurrences, reverse=True)
         return subjects[:max_subjects]
 

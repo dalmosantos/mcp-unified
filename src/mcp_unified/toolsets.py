@@ -47,9 +47,7 @@ ALL_TOOLSETS: dict[str, ToolsetInfo] = {
     SERVICENOW: ToolsetInfo(
         SERVICENOW, "servicenow", True, "Incidents, changes, problems, knowledge (read-only)"
     ),
-    MSGRAPH: ToolsetInfo(
-        MSGRAPH, "msgraph", True, "SharePoint e mensagens do Teams (read-only)"
-    ),
+    MSGRAPH: ToolsetInfo(MSGRAPH, "msgraph", True, "SharePoint e mensagens do Teams (read-only)"),
     CORRELATION: ToolsetInfo(
         CORRELATION, "correlation", True, "Correlação entre sessão e telemetria"
     ),

@@ -126,7 +126,5 @@ def audit(text: str) -> dict[str, int]:
     depuração para saber o que foi removido sem registrar o que era.
     """
     return {
-        name: len(pattern.findall(text))
-        for name, pattern, _ in _PATTERNS
-        if pattern.search(text)
+        name: len(pattern.findall(text)) for name, pattern, _ in _PATTERNS if pattern.search(text)
     }

@@ -22,9 +22,7 @@ def _parser() -> argparse.ArgumentParser:
             "perfis disponíveis:\n"
             + "\n".join(f"  {name:<12} {', '.join(sets)}" for name, sets in PROFILES.items())
             + "\n\ntoolsets disponíveis:\n"
-            + "\n".join(
-                f"  {name:<28} {info.description}" for name, info in ALL_TOOLSETS.items()
-            )
+            + "\n".join(f"  {name:<28} {info.description}" for name, info in ALL_TOOLSETS.items())
         ),
     )
     parser.add_argument(

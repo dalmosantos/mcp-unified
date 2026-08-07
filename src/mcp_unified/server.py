@@ -66,9 +66,7 @@ def build_server(
     """Constrói o servidor com os toolsets resolvidos."""
     settings = settings or Settings()
 
-    effective_safe_mode = (
-        settings.security.safe_mode if safe_mode is None else safe_mode
-    )
+    effective_safe_mode = settings.security.safe_mode if safe_mode is None else safe_mode
     enabled = resolve(
         profile=profile or settings.server.profile,
         toolsets=toolsets if toolsets is not None else settings.server.toolsets,

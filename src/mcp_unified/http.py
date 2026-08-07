@@ -75,9 +75,7 @@ class BaseApiClient:
     ) -> Any:
         """Executa a chamada e devolve o JSON já decodificado (ou `None` em 204)."""
         url = f"{(base_url or self.base_url).rstrip('/')}/{path.lstrip('/')}"
-        clean_params = (
-            {k: v for k, v in params.items() if v is not None} if params else None
-        )
+        clean_params = {k: v for k, v in params.items() if v is not None} if params else None
 
         last_exc: Exception | None = None
         for attempt in range(self.max_retries + 1):
@@ -108,9 +106,7 @@ class BaseApiClient:
 
         raise ProviderError(self.provider_name, "retentativas esgotadas") from last_exc
 
-    async def _sleep_backoff(
-        self, attempt: int, response: httpx.Response | None = None
-    ) -> None:
+    async def _sleep_backoff(self, attempt: int, response: httpx.Response | None = None) -> None:
         """Backoff exponencial com jitter; respeita `Retry-After` quando presente."""
         delay = min(2.0**attempt, 30.0) + random.uniform(0, 0.5)
         if response is not None:

@@ -61,9 +61,7 @@ class OpenAIProvider:
             )
 
         try:
-            response = await parse_fn(
-                model=self.model, messages=messages, response_format=schema
-            )
+            response = await parse_fn(model=self.model, messages=messages, response_format=schema)
         except Exception as exc:  # noqa: BLE001
             raise ProviderError("openai", f"falha na inferência: {exc}") from exc
 

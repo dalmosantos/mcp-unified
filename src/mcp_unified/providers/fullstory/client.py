@@ -78,9 +78,7 @@ class FullStoryClient(BaseApiClient):
         return await self.post(f"{API_V2}/visit_profile", json=payload)
 
     async def update_session_profile(self, profile_id: str, payload: dict[str, Any]) -> Any:
-        return await self.post(
-            f"{API_V2}/visit_profile/{quote(profile_id, safe='')}", json=payload
-        )
+        return await self.post(f"{API_V2}/visit_profile/{quote(profile_id, safe='')}", json=payload)
 
     async def delete_session_profile(self, profile_id: str) -> Any:
         return await self.delete(f"{API_V2}/visit_profile/{quote(profile_id, safe='')}")
@@ -117,9 +115,7 @@ class FullStoryClient(BaseApiClient):
     ) -> Any:
         if not uid and not email:
             raise ValueError("informe uid ou email para listar sessões")
-        return await self.get(
-            "v1/sessions", params={"uid": uid, "email": email, "limit": limit}
-        )
+        return await self.get("v1/sessions", params={"uid": uid, "email": email, "limit": limit})
 
     async def search_sessions(self, criteria: dict[str, Any]) -> Any:
         return await self.post(f"{API_V2}/sessions/search", json=criteria)
@@ -154,14 +150,10 @@ class FullStoryClient(BaseApiClient):
         )
 
     async def get_user_events(self, uid: str, options: dict[str, Any] | None = None) -> Any:
-        return await self.get(
-            f"users/v1/individual/{quote(uid, safe='')}/events", params=options
-        )
+        return await self.get(f"users/v1/individual/{quote(uid, safe='')}/events", params=options)
 
     async def get_user_pages(self, uid: str, options: dict[str, Any] | None = None) -> Any:
-        return await self.get(
-            f"users/v1/individual/{quote(uid, safe='')}/pages", params=options
-        )
+        return await self.get(f"users/v1/individual/{quote(uid, safe='')}/pages", params=options)
 
     # ------------------------------------------------------------------ events
 

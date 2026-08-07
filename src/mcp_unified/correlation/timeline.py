@@ -35,9 +35,7 @@ async def gather_entries(
 
     async def _one(source: TimelineSource) -> tuple[str, list[TimelineEntry] | Exception]:
         try:
-            entries = await source.events_in_window(
-                window, query=query, limit=limit_per_source
-            )
+            entries = await source.events_in_window(window, query=query, limit=limit_per_source)
             return source.source_name, entries
         except Exception as exc:  # noqa: BLE001
             logger.warning("fonte %s falhou: %s", source.source_name, exc)
