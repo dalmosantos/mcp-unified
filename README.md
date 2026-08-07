@@ -79,7 +79,7 @@ Cinco níveis, do que funciona sem nada até o uso real.
 ### 1. Suíte de testes — sem credencial, sem rede
 
 ```bash
-.venv/bin/pytest -q          # 73 testes
+.venv/bin/pytest -q          # 84 testes
 .venv/bin/ruff check src/ tests/
 ```
 
