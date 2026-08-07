@@ -286,3 +286,43 @@ async def test_modo_identity_puro_nao_cai_para_tempo(fake_env):
 
     assert out["effective_mode"] == "identity"
     assert out["summary"]["total_entries"] == 0
+
+
+# --------------------------------------- 6. entrada fora da janela é descartada
+
+
+@respx.mock
+async def test_entrada_fora_da_janela_nao_entra_na_timeline(fake_env):
+    """Uma entrada fora de janela é pior que uma faltando.
+
+    As consultas já mandam `from`/`to`, mas um endpoint que ignore o filtro
+    (proxy, gateway, ambiente de teste) faria eventos de outro horário
+    aparecerem como se fossem do incidente. O filtro do lado do cliente é a
+    rede de segurança — e este teste é o que impede alguém de removê-lo.
+    """
+    mock_fullstory_session(respx.mock, "session_pix_failure.json")
+    respx.mock.post(url__regex=r".*/api/v2/logs/events/search").mock(
+        return_value=respx.MockResponse(
+            200,
+            json={
+                "data": [
+                    {"id": "dentro", "attributes": {
+                        "timestamp": "2026-08-07T14:31:09Z", "service": "s",
+                        "status": "error", "message": "dentro da janela"}},
+                    {"id": "fora", "attributes": {
+                        "timestamp": "2026-08-07T18:00:00Z", "service": "s",
+                        "status": "error", "message": "muito depois"}},
+                ]
+            },
+        )
+    )
+    respx.mock.get(url__regex=r".*/api/v1/events.*").mock(
+        return_value=respx.MockResponse(200, json={"events": []})
+    )
+
+    server = build_server(profile="ide")
+    out = await _call(server, "build_unified_timeline", PIX_SESSION)
+
+    mensagens = [e["summary"] for e in out["timeline"]]
+    assert any("dentro da janela" in m for m in mensagens)
+    assert not any("muito depois" in m for m in mensagens)

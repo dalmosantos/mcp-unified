@@ -72,6 +72,125 @@ Três detalhes que costumam quebrar o registro por Docker:
 - **Nada pode ir para o stdout além do protocolo.** Todo log vai para stderr; um
   `print()` esquecido corrompe a sessão MCP.
 
+## Como testar localmente
+
+Cinco níveis, do que funciona sem nada até o uso real.
+
+### 1. Suíte de testes — sem credencial, sem rede
+
+```bash
+.venv/bin/pytest -q          # 73 testes
+.venv/bin/ruff check src/ tests/
+```
+
+Todas as respostas HTTP são interceptadas por `respx` e o provedor de modelo é
+um dublê. Nada sai da máquina.
+
+### 2. Inventário de tools — sem subir o servidor
+
+```bash
+mcp-unified --profile ide --list-tools
+```
+
+Mostra os toolsets ativos, quantas tools foram registradas, quais fontes de
+timeline existem e **por que** cada provedor ausente está desabilitado.
+
+### 3. Modo demo — exercita a correlação de verdade, sem conta nenhuma
+
+Um servidor HTTP local serve os mesmos fixtures dos testes nos caminhos que a
+FullStory, o Datadog e o ServiceNow usariam. O cliente faz requisições reais
+contra ele; o que muda é só para onde aponta.
+
+```bash
+# terminal 1
+.venv/bin/python scripts/demo_upstream.py
+
+# terminal 2
+source scripts/demo.env
+.venv/bin/mcp dev src/mcp_unified/server.py      # inspetor interativo
+```
+
+Ou direto, sem inspetor:
+
+```python
+import asyncio
+from mcp import Client
+from mcp_unified.server import build_server
+
+async def main():
+    async with Client(build_server(profile="all")) as c:
+        r = await c.call_tool("build_unified_timeline",
+                              {"user_id": "dev-77", "session_id": "sess-pix-1"})
+        out = (r.structured_content or {})["result"]
+        for e in out["timeline"]:
+            print(f"{e['ts'][11:19]}  {e['source']:<16} {e['summary'][:50]}")
+
+asyncio.run(main())
+```
+
+Saída esperada — a narrativa que justifica o projeto:
+
+```
+14:30:00  fullstory        navigate: /pix/transferir
+14:31:00  fullstory        click: Confirmar transferência
+14:31:01  datadog-spans    ⚠ [servico-transferencia] POST /api/pagamentos/tra…
+14:31:09  datadog-logs     ⚠ [servico-transferencia] timeout ao consultar SPI
+14:31:30  fullstory        ⚠ mouse_thrash: Confirmar transferência
+```
+
+> 💡 O deploy que causou a falha aconteceu **antes** da sessão começar, então
+> não cabe na janela padrão. Aumente a folga para encontrá-lo:
+> `padding_seconds=900` traz o `Deploy servico-transferencia v2.14` às 14:22.
+> Esse é o uso normal de `padding_seconds`.
+
+### 4. Na IDE
+
+```bash
+claude mcp add mcp-unified -- /caminho/para/.venv/bin/mcp-unified --profile ide
+```
+
+Ou o `.mcp.json` da seção acima. Depois, `/mcp` no Claude Code confirma que as
+tools apareceram. Para experimentar sem conta real, use o modo demo: aponte o
+`env` do `.mcp.json` para `http://127.0.0.1:8931` com as variáveis
+`FULLSTORY_BASE_URL` e `DD_BASE_URL`.
+
+### 5. Com credenciais reais
+
+O mínimo para a correlação funcionar são quatro variáveis:
+
+```bash
+FULLSTORY_API_KEY=...   FULLSTORY_ORG_ID=...    # sessão e replay
+DD_API_KEY=...          DD_APP_KEY=...          # logs (as duas são necessárias)
+```
+
+Depois valide com uma sessão que você conheça:
+
+```bash
+mcp-unified --profile ide --log-level DEBUG
+```
+
+O critério de aceite é o round-trip: rode `build_unified_timeline` numa janela
+de falha conhecida, confirme que frontend e backend aparecem intercalados na
+ordem certa, e então rode `find_sessions_for_incident` na mesma janela —
+a sessão original precisa voltar, com link de replay válido.
+
+### Docker
+
+```bash
+docker build -t mcp-unified .
+docker run -i --rm --env-file .env mcp-unified --profile ide --list-tools
+```
+
+Para verificar o protocolo de ponta a ponta dentro do container:
+
+```bash
+printf '%s\n' \
+ '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"t","version":"1"}}}' \
+ '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+ '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+ | docker run -i --rm --env-file .env mcp-unified --profile ide --log-level ERROR
+```
+
 ## Correlação
 
 As três tools de correlação não conhecem provedor por nome — iteram sobre quem

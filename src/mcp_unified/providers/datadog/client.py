@@ -25,7 +25,7 @@ class DatadogClient(BaseApiClient):
     def __init__(self, settings: DatadogSettings, **kwargs: Any) -> None:
         self.settings = settings
         super().__init__(
-            f"https://api.{settings.site}",
+            (settings.base_url_override or f"https://api.{settings.site}").rstrip("/"),
             headers={
                 "DD-API-KEY": settings.api_key or "",
                 "DD-APPLICATION-KEY": settings.app_key or "",
@@ -42,6 +42,8 @@ class DatadogClient(BaseApiClient):
         )
 
     def _url_for(self, service: Service) -> str:
+        if self.settings.base_url_override:
+            return self.settings.base_url_override.rstrip("/")
         return f"https://api.{self.settings.host_for(service)}"
 
     async def _call(

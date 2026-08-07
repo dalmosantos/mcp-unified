@@ -24,6 +24,7 @@ dependencies = [
 llm-anthropic = ["anthropic>=0.40"]
 llm-openai = ["openai>=1.40"]
 dev = [
+    "mcp[cli]>=2,<3",
     "pytest>=8",
     "pytest-asyncio>=0.23",
     "respx>=0.21",

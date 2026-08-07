@@ -38,6 +38,9 @@ class FullStorySettings(_Base):
     api_key: str | None = Field(default=None, alias="FULLSTORY_API_KEY")
     org_id: str | None = Field(default=None, alias="FULLSTORY_ORG_ID")
     datacenter: Literal["US", "EU1"] = Field(default="US", alias="FULLSTORY_DATACENTER")
+    # Override do host. Existe para o modo demo (scripts/demo_upstream.py) e
+    # para quem precisa apontar para um proxy corporativo.
+    base_url_override: str | None = Field(default=None, alias="FULLSTORY_BASE_URL")
 
     @property
     def configured(self) -> bool:
@@ -45,6 +48,8 @@ class FullStorySettings(_Base):
 
     @property
     def base_url(self) -> str:
+        if self.base_url_override:
+            return self.base_url_override.rstrip("/")
         return (
             "https://api.eu1.fullstory.com"
             if self.datacenter == "EU1"
@@ -58,6 +63,9 @@ class DatadogSettings(_Base):
     site: str = Field(default="datadoghq.com", alias="DD_SITE")
     logs_site: str | None = Field(default=None, alias="DD_LOGS_SITE")
     metrics_site: str | None = Field(default=None, alias="DD_METRICS_SITE")
+    # Override do host completo, incluindo esquema e porta. Mesma motivação do
+    # equivalente na FullStory: modo demo e proxy corporativo.
+    base_url_override: str | None = Field(default=None, alias="DD_BASE_URL")
 
     @field_validator("site", "logs_site", "metrics_site", mode="after")
     @classmethod

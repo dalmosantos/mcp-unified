@@ -56,6 +56,17 @@ class _Base:
             logger.warning("datadog/%s indisponível: %s", label, exc)
             return None
 
+    @staticmethod
+    def _within(ts: datetime | None, window: SessionWindow) -> bool:
+        """Confere a janela do lado do cliente.
+
+        As consultas já mandam `from`/`to`, mas confiar só nisso é frágil: um
+        endpoint que ignore o filtro (proxy, gateway, ambiente de teste) faria
+        entradas de outro horário entrarem na timeline como se fossem do
+        incidente. Uma entrada fora de janela é pior que uma faltando.
+        """
+        return ts is not None and window.start <= ts <= window.end
+
 
 class DatadogLogsSource(_Base):
     """Logs. Também resolve identidades, agregando por facet de usuário."""
@@ -79,7 +90,7 @@ class DatadogLogsSource(_Base):
         for item in _items(payload):
             attrs = item.get("attributes") or {}
             ts = _parse_ts(attrs.get("timestamp"))
-            if ts is None:
+            if not self._within(ts, window):
                 continue
             inner = attrs.get("attributes") or {}
             service = attrs.get("service") or inner.get("service") or "?"
@@ -142,7 +153,7 @@ class DatadogRUMSource(_Base):
         for item in _items(payload):
             attrs = item.get("attributes") or {}
             ts = _parse_ts(attrs.get("timestamp"))
-            if ts is None:
+            if not self._within(ts, window):
                 continue
             inner = attrs.get("attributes") or {}
             event_type = (inner.get("type") or attrs.get("type") or "rum") if inner else "rum"
@@ -188,7 +199,7 @@ class DatadogSpansSource(_Base):
         for item in _items(payload):
             attrs = item.get("attributes") or {}
             ts = _parse_ts(attrs.get("start_timestamp") or attrs.get("timestamp"))
-            if ts is None:
+            if not self._within(ts, window):
                 continue
             resource = attrs.get("resource_name") or attrs.get("resource") or "?"
             service = attrs.get("service") or "?"
@@ -231,7 +242,7 @@ class DatadogEventsSource(_Base):
             if not isinstance(event, dict):
                 continue
             ts = _parse_ts(event.get("date_happened"))
-            if ts is None:
+            if not self._within(ts, window):
                 continue
             title = event.get("title") or "(sem título)"
             alert_type = event.get("alert_type") or "info"
