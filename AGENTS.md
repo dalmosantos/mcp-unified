@@ -29,7 +29,7 @@ Python ≥ 3.10. Não há `uv` nesta máquina; use `venv` + `pip`.
 ## Comandos
 
 ```bash
-.venv/bin/pytest -q                        # 73 testes, sem rede, sem credencial
+.venv/bin/pytest -q                        # 84 testes, sem rede, sem credencial
 .venv/bin/ruff check src/ tests/           # lint (deve passar limpo)
 .venv/bin/ruff check --fix src/ tests/
 
