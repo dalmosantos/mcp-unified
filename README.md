@@ -143,6 +143,44 @@ Saída esperada — a narrativa que justifica o projeto:
 > `padding_seconds=900` traz o `Deploy servico-transferencia v2.14` às 14:22.
 > Esse é o uso normal de `padding_seconds`.
 
+### 3b. Emulador do Datadog — prova que a requisição é a certa
+
+`demo_upstream.py` devolve fixture ignorando o pedido: prova que sabemos *ler*
+uma resposta, não que construímos a requisição certa.
+`scripts/datadog_emulator.py` valida a requisição — exige as duas chaves,
+interpreta `filter.query` (inclusive o filtro `@usr.id:`), respeita a janela e
+honra o `group_by`.
+
+```bash
+.venv/bin/python scripts/datadog_emulator.py
+export DD_API_KEY=teste DD_APP_KEY=teste DD_BASE_URL=http://127.0.0.1:8932
+```
+
+O teste que só ele permite — os três modos de correlação contra um servidor que
+de fato honra o filtro (a sessão é de `dev-77`, que não está entre os afetados):
+
+```
+identity  → efetivo=identity  logs=0   query='@usr.id:dev-77'
+time      → efetivo=time      logs=22  query='*'
+both      → efetivo=time      logs=22  query='*'
+             ⚠ filtro por identidade não retornou resultados…
+```
+
+`identity` compõe o filtro e devolve vazio — resposta legítima, sem mascarar.
+`both` cai para temporal **e declara**. É o design funcionando ponta a ponta.
+
+Para exercitar o retry:
+
+```bash
+.venv/bin/python scripts/datadog_emulator.py --fail-mode 429 --fail-count 2
+# a chamada sucede na terceira tentativa, após ~3,5s de backoff exponencial
+```
+
+> **Por que não subir o Datadog Agent?** O Agent é um *remetente*: coleta
+> telemetria e envia para a nuvem. Ele não expõe API de leitura. Este servidor
+> consulta `api.datadoghq.com` atrás de logs, monitores e spans — um Agent
+> local não cria esse endpoint. Não existe "Datadog local consultável".
+
 ### 4. Na IDE
 
 ```bash
