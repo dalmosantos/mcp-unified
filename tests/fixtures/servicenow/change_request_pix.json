@@ -1,0 +1,7 @@
+{
+  "result": [
+    {"number": "CHG0000045", "short_description": "Deploy servico-transferencia v2.14",
+     "start_date": "2026-08-07 14:22:00", "sys_created_on": "2026-08-07 10:00:00",
+     "state": "Implement", "sys_id": "abc123"}
+  ]
+}

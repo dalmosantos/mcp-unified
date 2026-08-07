@@ -1,0 +1,19 @@
+# Credenciais nunca entram na imagem.
+.env
+.env.*
+!.env.example
+
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+tests/
+.git/
+.github/
+*.md
+!README.md

@@ -1,0 +1,10 @@
+{
+  "data": [
+    {"id": "log-h1", "type": "log", "attributes": {
+      "timestamp": "2026-08-07T09:00:31Z", "service": "canal-digital",
+      "status": "info", "message": "autenticacao concluida"}},
+    {"id": "log-h2", "type": "log", "attributes": {
+      "timestamp": "2026-08-07T09:00:36Z", "service": "canal-digital",
+      "status": "info", "message": "saldo consultado"}}
+  ]
+}

@@ -1,0 +1,45 @@
+MIT License
+
+Copyright (c) 2026 dalmosantos
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---------------------------------------------------------------------------
+NOTICE — trabalhos derivados
+---------------------------------------------------------------------------
+
+Este projeto é uma reimplementação em Python que deriva de dois projetos
+licenciados sob MIT:
+
+1. fs-lexicon — https://github.com/fullstorydev/fs-lexicon
+   Copyright (c) FullStory
+   Origem da superfície de tools da FullStory (subpasta MCP/), da lógica de
+   análise client-side portada em providers/fullstory/analytics.py e do
+   validador de conteúdo portado em security/validation.py.
+
+2. datadog-mcp-server — https://github.com/GeLi2001/datadog-mcp-server
+   Copyright (c) GeLi2001
+   Origem da superfície de tools do Datadog. Os nomes das tools foram
+   alterados de kebab-case para snake_case com prefixo de provedor, por
+   necessidade de namespace neste servidor unificado.
+
+Nenhum código-fonte dos projetos acima foi copiado literalmente: as duas bases
+são JavaScript/TypeScript e este projeto é uma reimplementação em Python. A
+atribuição é feita porque o desenho da API, os nomes das tools e a lógica de
+negócio derivam desses trabalhos.

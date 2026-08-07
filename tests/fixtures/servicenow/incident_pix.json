@@ -1,0 +1,7 @@
+{
+  "result": [
+    {"number": "INC0000123", "short_description": "Falha em transferencias PIX",
+     "sys_created_on": "2026-08-07 14:35:00", "priority": "1",
+     "caller_id": {"display_value": "cliente-4471"}, "sys_id": "def456"}
+  ]
+}

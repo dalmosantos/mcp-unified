@@ -1,0 +1,40 @@
+# Modo HTTP — o que o agente autônomo de SRE consome.
+# Para uso na IDE não use compose: `docker run -i --rm ...` (o -i é essencial).
+services:
+  mcp-unified:
+    build: .
+    image: mcp-unified
+    command:
+      - --transport
+      - streamable-http
+      - --profile
+      - sre-agent
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8080"
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/mcp', timeout=3).status < 500 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Perfil opcional: modelo local, para que nenhum dado saia da rede.
+  # Suba com:  docker compose --profile local-llm up -d
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["local-llm"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  ollama-models:

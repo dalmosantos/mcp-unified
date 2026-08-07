@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-unified"
+version = "0.1.0"
+description = "Servidor MCP unificado sobre FullStory, Datadog, ServiceNow e Microsoft Graph, com correlação entre sessão de usuário e telemetria de backend"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "dalmosantos" }]
+keywords = ["mcp", "observability", "sre", "fullstory", "datadog", "servicenow"]
+
+dependencies = [
+    "mcp>=2,<3",
+    "httpx>=0.27",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "pyjwt[crypto]>=2.8",
+]
+
+[project.optional-dependencies]
+llm-anthropic = ["anthropic>=0.40"]
+llm-openai = ["openai>=1.40"]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "respx>=0.21",
+    "ruff>=0.6",
+]
+
+[project.scripts]
+mcp-unified = "mcp_unified.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/dalmosantos/mcp-unified"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_unified"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+filterwarnings = ["error::DeprecationWarning:mcp_unified.*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]

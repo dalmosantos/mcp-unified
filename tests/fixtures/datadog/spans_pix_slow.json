@@ -1,0 +1,7 @@
+{
+  "data": [
+    {"id": "span-1", "type": "spans", "attributes": {
+      "start_timestamp": "2026-08-07T14:31:01Z", "service": "servico-transferencia",
+      "resource_name": "POST /api/pagamentos/transferencia", "duration": 8200000000}}
+  ]
+}

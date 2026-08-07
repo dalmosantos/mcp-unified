@@ -40,7 +40,7 @@ O agente de SRE, como estava desenhado originalmente, ia escrever o próprio cli
 
 O que **não** entra aqui: vector store, RAG, lógica de classificação, agendamento. Isso é lógica de agente e vive no projeto de SRE. O MCP expõe dados; quem decide é o cliente.
 
-**Resultado esperado:** 72 tools em *toolsets* selecionáveis, para que a IDE carregue 29 e o agente carregue outro recorte.
+**Resultado esperado:** 73 tools (33 FullStory + 24 Datadog + 6 ServiceNow + 5 MS Graph + 3 correlação + 2 análise) em *toolsets* selecionáveis, para que a IDE carregue 32 e o agente carregue outro recorte.
 
 ## Decisões tomadas
 
@@ -101,12 +101,12 @@ O MCP oficial da FullStory (analisado via [fullstory-skills](https://github.com/
 
 ### 3. Toolsets e perfis
 
-72 tools num só servidor consomem contexto demais numa IDE — a própria Datadog avisa disso na doc deles. Grupos selecionáveis via `--toolsets` / `MCP_TOOLSETS`:
+73 tools num só servidor consomem contexto demais numa IDE — a própria Datadog avisa disso na doc deles. Grupos selecionáveis via `--toolsets` / `MCP_TOOLSETS`:
 
 | Toolset | Tools |
 |---|---|
-| `fullstory-core` | 16 (leitura: sessões, users, analytics, segments, health) |
-| `fullstory-write` | 16 (create/update/delete, batch, exports, annotations) |
+| `fullstory-core` | 19 (leitura: sessões, users, analytics, segments, health) |
+| `fullstory-write` | 14 (create/update/delete, batch, exports, annotations) |
 | `datadog-core` | 10 (monitors, dashboards, metrics, events, incidents, logs) |
 | `datadog-rum` | 8 (RUM 4 + Error Tracking 4) |
 | `datadog-apm` | 3 (spans) |
@@ -120,9 +120,9 @@ Como os dois consumidores querem recortes diferentes, `--profile` expande para u
 
 | Perfil | Toolsets | Tools |
 |---|---|---|
-| `ide` (padrão) | `fullstory-core`, `datadog-core`, `correlation` | 29 |
-| `sre-agent` | `datadog-core`, `datadog-rum`, `servicenow`, `msgraph`, `fullstory-core`, `correlation` | 48 |
-| `all` | tudo | 72 |
+| `ide` (padrão) | `fullstory-core`, `datadog-core`, `correlation` | 32 |
+| `sre-agent` | `datadog-core`, `datadog-rum`, `servicenow`, `msgraph`, `fullstory-core`, `correlation` | 51 |
+| `all` | tudo | 73 |
 
 `SAFE_MODE=true` força só os grupos de leitura, independente do perfil.
 
@@ -173,7 +173,7 @@ mcp-unified/
     └── tests/
 ```
 
-**Convenção de nomes:** `fullstory_*`, `datadog_*`, `servicenow_*`, `msgraph_*`, `correlate_*` — tudo `snake_case`. As tools do Datadog são **renomeadas** em relação ao servidor original (`get-monitors` → `datadog_get_monitors`): quebra proposital, para o namespace ficar legível com 72 tools.
+**Convenção de nomes:** `fullstory_*`, `datadog_*`, `servicenow_*`, `msgraph_*`, `correlate_*` — tudo `snake_case`. As tools do Datadog são **renomeadas** em relação ao servidor original (`get-monitors` → `datadog_get_monitors`): quebra proposital, para o namespace ficar legível com 73 tools.
 
 ## Descobertas técnicas que orientam a implementação
 
@@ -226,7 +226,7 @@ class SubjectResolver(Protocol):
 
 6. `__main__.py` — argparse com `--transport {stdio,streamable-http}` (padrão `stdio`), `--profile`, `--toolsets`, `--host`, `--port`, `--safe-mode`, chamando `mcp.run(transport=...)`.
 
-## Fase 2 — Provedor FullStory (32 tools)
+## Fase 2 — Provedor FullStory (33 tools)
 
 **Arquivos:** `providers/fullstory/{client,analytics,tools}.py`
 
@@ -467,7 +467,7 @@ async def m(p):
 for p in ('ide', 'sre-agent', 'all'):
     asyncio.run(m(p))
 "
-# espera: ide -> 29, sre-agent -> 48, all -> 72
+# espera: ide -> 32, sre-agent -> 51, all -> 73
 
 # 3. Degradação: sem credencial de ServiceNow o servidor sobe mesmo assim
 env -u SNOW_INSTANCE .venv/bin/python -c "..."
@@ -527,6 +527,6 @@ Três detalhes que quebram o registro por Docker, e que o README precisa dizer:
 - **A chave de junção do ServiceNow é incompleta** — nem todo alerta vira ticket. Enviesa o corpus para incidentes graves.
 - **`GET /api/v1/search?q=` para `get_metrics`** é inferência de qual endpoint o `listMetrics` do SDK TS chama — confirmar na doc ao implementar.
 - **Renomear as tools do Datadog** quebra configs do servidor original. Proposital; documentar no README.
-- **72 tools é superfície grande.** Perfis e toolsets resolvem o contexto, mas descrições precisas importam mais que o normal.
+- **73 tools é superfície grande.** Perfis e toolsets resolvem o contexto, mas descrições precisas importam mais que o normal.
 - **Saída estruturada é o ponto frágil da camada LLM agnóstica.** O adaptador `openai_compat` depende de modo JSON + validação com retry, menos confiável que `json_schema` nativo. Modelos locais pequenos erram mais — testar o modelo escolhido antes de confiar nas 2 tools de análise.
 - **Escopo excluído:** o resto do fs-lexicon (webhooks, Slack, Snowflake, BigQuery, Atlassian), as 4 tools de sistema, Redis no rate limiting, escrita em ServiceNow ou Graph, e toda a lógica de agente (vector store, RAG, classificação, agendamento) — essa vive em `sre-agente-autonomo.md`.

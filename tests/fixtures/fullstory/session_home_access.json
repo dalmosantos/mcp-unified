@@ -1,0 +1,15 @@
+{
+  "events": [
+    {"event_type": "navigate", "event_time": "2026-08-07T09:00:00Z",
+     "source_properties": {"location": {"country": "BR"}, "device": {"type": "desktop"}},
+     "event_properties": {"url": "/login"}},
+    {"event_type": "change", "event_time": "2026-08-07T09:00:15Z",
+     "event_properties": {"target_text": "Agência e conta"}},
+    {"event_type": "click", "event_time": "2026-08-07T09:00:30Z",
+     "event_properties": {"target_text": "Entrar"}},
+    {"event_type": "navigate", "event_time": "2026-08-07T09:00:35Z",
+     "event_properties": {"url": "/home"}},
+    {"event_type": "element_seen", "event_time": "2026-08-07T09:00:40Z",
+     "event_properties": {"target_text": "Saldo disponível"}}
+  ]
+}

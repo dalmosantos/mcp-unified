@@ -1,0 +1,19 @@
+{
+  "events": [
+    {"event_type": "navigate", "event_time": "2026-08-07T14:30:00Z",
+     "source_properties": {"location": {"country": "BR"}, "device": {"type": "mobile"}},
+     "event_properties": {"url": "/pix/transferir"}},
+    {"event_type": "change", "event_time": "2026-08-07T14:30:20Z",
+     "event_properties": {"target_text": "Chave PIX"}},
+    {"event_type": "change", "event_time": "2026-08-07T14:30:45Z",
+     "event_properties": {"target_text": "Valor"}},
+    {"event_type": "click", "event_time": "2026-08-07T14:31:00Z",
+     "event_properties": {"target_text": "Confirmar transferência"}},
+    {"event_type": "mouse_thrash", "event_time": "2026-08-07T14:31:30Z",
+     "event_properties": {"target_text": "Confirmar transferência"}},
+    {"event_type": "mouse_thrash", "event_time": "2026-08-07T14:31:45Z",
+     "event_properties": {"target_text": "Confirmar transferência"}},
+    {"event_type": "exception", "event_time": "2026-08-07T14:31:50Z",
+     "event_properties": {"message": "Erro ao processar transferencia"}}
+  ]
+}

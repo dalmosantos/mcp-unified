@@ -1,0 +1,12 @@
+{
+  "data": [
+    {"id": "log-1", "type": "log", "attributes": {
+      "timestamp": "2026-08-07T14:31:09Z", "service": "servico-transferencia",
+      "status": "error", "message": "timeout ao consultar SPI apos 8000ms",
+      "attributes": {"usr": {"id": "cliente-4471"}}}},
+    {"id": "log-2", "type": "log", "attributes": {
+      "timestamp": "2026-08-07T14:31:12Z", "service": "servico-transferencia",
+      "status": "error", "message": "transferencia rejeitada: upstream indisponivel",
+      "attributes": {"usr": {"id": "cliente-4471"}}}}
+  ]
+}

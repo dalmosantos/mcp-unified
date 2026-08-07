@@ -1,0 +1,7 @@
+{
+  "data": [
+    {"by": {"@usr.id": "cliente-4471"}, "computes": {"c0": 12}},
+    {"by": {"@usr.id": "cliente-8890"}, "computes": {"c0": 7}},
+    {"by": {"@usr.id": "cliente-2013"}, "computes": {"c0": 3}}
+  ]
+}
