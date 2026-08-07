@@ -1,0 +1,28 @@
+{
+  "name": "mcp-unified",
+  "owner": {
+    "name": "dalmosantos"
+  },
+  "metadata": {
+    "description": "Servidor MCP e skills de SRE para investigação de incidentes com correlação entre frontend e backend.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "mcp-unified-sre",
+      "source": "./",
+      "category": "observability",
+      "description": "Cruza o que o usuário fez na tela com o que o backend registrou. 73 tools sobre FullStory, Datadog, ServiceNow e Microsoft Graph, três tools de correlação que derivam a janela temporal da sessão automaticamente, e quatro skills de SRE.",
+      "keywords": [
+        "sre",
+        "observabilidade",
+        "incidente",
+        "correlação",
+        "datadog",
+        "fullstory",
+        "servicenow",
+        "post-mortem"
+      ]
+    }
+  ]
+}

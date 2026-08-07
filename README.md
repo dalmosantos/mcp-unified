@@ -79,7 +79,7 @@ Cinco níveis, do que funciona sem nada até o uso real.
 ### 1. Suíte de testes — sem credencial, sem rede
 
 ```bash
-.venv/bin/pytest -q          # 86 testes
+.venv/bin/pytest -q          # 91 testes
 .venv/bin/ruff check src/ tests/
 ```
 
@@ -242,9 +242,32 @@ qual escolher para qual pergunta, e quais armadilhas evitar. A divisão é por
 | [`sre-postmortem`](skills/sre-postmortem/SKILL.md) | "como registro isso para a próxima vez?" |
 | [`sre-setup`](skills/sre-setup/SKILL.md) | "por que voltou vazio?" — distingue configuração de ausência de dado |
 
+### Instalação como plugin
+
+O repositório é um plugin: `.claude-plugin/` + `.mcp.json` + `skills/` +
+`agents/`. Instalar traz o servidor configurado e as quatro skills de uma vez.
+
 ```bash
-mkdir -p .claude/skills && cp -r skills/sre-* .claude/skills/
+/plugin marketplace add dalmosantos/mcp-unified
+/plugin install mcp-unified-sre
 ```
+
+Pré-requisito: `mcp-unified` no `PATH` (via `pip install -e .`) e as variáveis
+de credencial no ambiente. Manualmente, sem plugin:
+
+```bash
+mkdir -p .claude/skills .claude/agents
+cp -r skills/sre-* .claude/skills/
+cp agents/*.md .claude/agents/
+```
+
+### O subagente `session-context`
+
+`agents/session-context.md` lê o transcript de uma sessão num contexto isolado
+e devolve só a resposta. Um transcript tem centenas de eventos; carregá-lo no
+contexto principal consome o orçamento que a investigação precisa depois. A
+skill `sre-user-impact` instrui a usá-lo em vez de chamar
+`fullstory_get_session_events` diretamente.
 
 ## Correlação
 

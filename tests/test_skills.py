@@ -94,3 +94,53 @@ def test_readme_das_skills_lista_todas():
         assert path.parent.name in readme, (
             f"{path.parent.name} não aparece em skills/README.md"
         )
+
+
+# ------------------------------------------------- empacotamento como plugin
+
+PLUGIN_FILES = [
+    Path(__file__).parent.parent / ".claude-plugin" / "plugin.json",
+    Path(__file__).parent.parent / ".claude-plugin" / "marketplace.json",
+    Path(__file__).parent.parent / ".mcp.json",
+]
+
+
+@pytest.mark.parametrize("path", PLUGIN_FILES, ids=lambda p: p.name)
+def test_manifest_e_json_valido(path: Path):
+    import json
+
+    assert path.exists(), f"{path} não existe"
+    json.loads(path.read_text(encoding="utf-8"))
+
+
+def test_plugin_e_marketplace_concordam():
+    import json
+
+    root = Path(__file__).parent.parent
+    plugin = json.loads((root / ".claude-plugin" / "plugin.json").read_text())
+    market = json.loads((root / ".claude-plugin" / "marketplace.json").read_text())
+    listed = {p["name"] for p in market["plugins"]}
+    assert plugin["name"] in listed, (
+        f"plugin.json declara '{plugin['name']}', ausente do marketplace.json"
+    )
+
+
+@pytest.mark.parametrize(
+    "path", sorted((Path(__file__).parent.parent / "agents").glob("*.md")),
+    ids=lambda p: p.stem,
+)
+async def test_subagente_declara_tools_que_existem(path: Path, monkeypatch):
+    """Um subagente que declara tool inexistente falha em silêncio no runtime."""
+    for key, value in ALL_ENV.items():
+        monkeypatch.setenv(key, value)
+
+    front = re.match(r"^---\n(.*?)\n---\n", path.read_text(encoding="utf-8"), re.S)
+    assert front, f"{path}: sem frontmatter"
+    declared = re.findall(r"^\s+-\s+([a-z][a-z0-9_]+)\s*$", front.group(1), re.M)
+    assert declared, f"{path}: nenhuma tool declarada"
+
+    async with Client(build_server(profile="all")) as client:
+        real = {t.name for t in (await client.list_tools()).tools}
+
+    missing = sorted(set(declared) - real)
+    assert not missing, f"{path.stem} declara tools inexistentes: {missing}"

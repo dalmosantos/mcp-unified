@@ -110,9 +110,19 @@ está afirmando.
 
 Depois da timeline, se precisar de detalhe:
 
-- `fullstory_get_session_events` — o transcript completo, sem filtro
+- **`session-context`** (subagente) — leia o transcript **através dele**, não
+  diretamente. Passe `user_id`, `session_id` e uma pergunta focada; ele carrega
+  os eventos num contexto descartável e devolve só a resposta.
 - `fullstory_get_session_insights` — clusters de comportamento, pontos de abandono
 - `fullstory_get_session_link` — **a URL do replay**, para o humano assistir
+
+> ⚠️ **Não chame `fullstory_get_session_events` no contexto principal.** Um
+> transcript tem centenas de eventos e consome o orçamento que a investigação
+> vai precisar depois — para correlacionar, comparar com o histórico e
+> escrever a conclusão. O subagente `session-context` existe para isso: o
+> transcript é lido num contexto que será descartado, e só a resposta
+> atravessa. Se o runtime não suportar subagentes, use
+> `fullstory_get_session_insights`, que devolve o agregado em vez do bruto.
 
 O replay é o caminho para inspeção visual: não existe API pública de
 screenshot. Ofereça o link sempre que a discussão virar "mas o que exatamente

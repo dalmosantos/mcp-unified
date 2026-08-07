@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "mcp-unified": {
+      "command": "mcp-unified",
+      "args": ["--profile", "ide"],
+      "env": {
+        "FULLSTORY_API_KEY": "${FULLSTORY_API_KEY}",
+        "FULLSTORY_ORG_ID": "${FULLSTORY_ORG_ID}",
+        "DD_API_KEY": "${DD_API_KEY}",
+        "DD_APP_KEY": "${DD_APP_KEY}",
+        "FS_DD_USER_ATTR": "${FS_DD_USER_ATTR:-@usr.id}"
+      }
+    }
+  }
+}
