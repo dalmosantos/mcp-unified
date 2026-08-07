@@ -12,6 +12,8 @@ from typing import Protocol, runtime_checkable
 
 from .models import SessionWindow, Subject, TimelineEntry
 
+__all__ = ["SessionProvider", "SubjectResolver", "TimelineSource"]
+
 
 @runtime_checkable
 class TimelineSource(Protocol):
@@ -32,6 +34,31 @@ class TimelineSource(Protocol):
         para este provedor, devolver lista vazia em vez de levantar erro —
         a timeline unificada é melhor incompleta do que ausente.
         """
+        ...
+
+
+@runtime_checkable
+class SessionProvider(Protocol):
+    """Provedor que sabe resolver a sessão de um usuário.
+
+    Derivar a janela **a partir de uma sessão** é a única operação da
+    correlação que precisa de um provedor específico — alguém tem que saber o
+    que é uma sessão. Este protocolo existe para que essa dependência seja um
+    contrato, e não o nome "fullstory" escrito dentro de `correlation/`.
+    """
+
+    source_name: str
+
+    async def session_events(self, user_id: str, session_id: str) -> list[dict]:
+        """Eventos brutos da sessão, com timestamp."""
+        ...
+
+    async def sessions_for_user(self, uid: str, *, limit: int = 5) -> list[dict]:
+        """Sessões recentes de um usuário."""
+        ...
+
+    def session_link(self, user_id: str, session_id: str) -> str:
+        """URL para inspeção visual da sessão."""
         ...
 
 

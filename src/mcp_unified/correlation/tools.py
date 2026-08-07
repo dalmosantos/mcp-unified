@@ -28,7 +28,7 @@ def register(server: Any, ctx: ServerContext) -> None:
         user_id: str, session_id: str, padding_seconds: int | None
     ) -> Any:
         return await derive_session_window(
-            ctx.clients.get("fullstory"),
+            ctx.session_provider,
             user_id,
             session_id,
             padding_seconds=(
@@ -236,20 +236,20 @@ def register(server: Any, ctx: ServerContext) -> None:
                 ),
             }
 
-        fullstory = ctx.clients.get("fullstory")
+        provider = ctx.session_provider
         sessions: list[dict[str, Any]] = []
         session_errors: dict[str, str] = {}
 
-        if fullstory is not None:
+        if provider is not None:
             for subject in ranked:
                 try:
-                    found = await fullstory.list_sessions(
-                        uid=subject.id, limit=sessions_per_user
+                    found = await provider.sessions_for_user(
+                        subject.id, limit=sessions_per_user
                     )
                 except Exception as exc:  # noqa: BLE001
                     session_errors[subject.id] = str(exc)
                     continue
-                for session in _as_sessions(found):
+                for session in found:
                     session_id = session.get("sessionId") or session.get("session_id")
                     device_id = (
                         session.get("userId")
@@ -264,7 +264,7 @@ def register(server: Any, ctx: ServerContext) -> None:
                             "session_id": session_id,
                             "device_id": device_id,
                             "replay_url": (
-                                fullstory.session_link(str(device_id), str(session_id))
+                                provider.session_link(str(device_id), str(session_id))
                                 if session_id
                                 else None
                             ),
@@ -284,8 +284,9 @@ def register(server: Any, ctx: ServerContext) -> None:
             "session_errors": session_errors or None,
             "note": (
                 None
-                if fullstory is not None
-                else "FullStory não configurada — identidades resolvidas, mas sem sessões nem replay."
+                if provider is not None
+                else "Sem provedor de sessão configurado — identidades resolvidas, "
+                "mas sem sessões nem link de replay."
             ),
         }
 
@@ -296,15 +297,3 @@ def register(server: Any, ctx: ServerContext) -> None:
     ):
         server.add_tool(fn, name=fn.__name__)
         ctx.registered_tools.append(fn.__name__)
-
-
-def _as_sessions(payload: Any) -> list[dict[str, Any]]:
-    """A v1 de sessões já devolveu lista crua e envelope; aceita os dois."""
-    if isinstance(payload, list):
-        return [s for s in payload if isinstance(s, dict)]
-    if isinstance(payload, dict):
-        for key in ("sessions", "data", "results"):
-            value = payload.get(key)
-            if isinstance(value, list):
-                return [s for s in value if isinstance(s, dict)]
-    return []

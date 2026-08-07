@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from ..config import Settings
-from ..protocols import SubjectResolver, TimelineSource
+from ..protocols import SessionProvider, SubjectResolver, TimelineSource
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..http import BaseApiClient
@@ -28,6 +28,7 @@ class ServerContext:
     clients: dict[str, Any] = field(default_factory=dict)
     timeline_sources: list[TimelineSource] = field(default_factory=list)
     subject_resolvers: list[SubjectResolver] = field(default_factory=list)
+    session_provider: SessionProvider | None = None
     disabled: dict[str, str] = field(default_factory=dict)
     registered_tools: list[str] = field(default_factory=list)
 
@@ -46,6 +47,22 @@ class ServerContext:
     def add_subject_resolver(self, resolver: SubjectResolver) -> None:
         self.subject_resolvers.append(resolver)
         logger.debug("resolvedor de identidade registrado: %s", resolver.source_name)
+
+    def set_session_provider(self, provider: SessionProvider) -> None:
+        """Registra quem sabe resolver sessões.
+
+        Só um por servidor: sessão é um conceito de um produto de análise de
+        frontend, e ter dois seria ambiguidade, não redundância.
+        """
+        if self.session_provider is not None:
+            logger.warning(
+                "provedor de sessão já registrado (%s); ignorando %s",
+                self.session_provider.source_name,
+                provider.source_name,
+            )
+            return
+        self.session_provider = provider
+        logger.debug("provedor de sessão registrado: %s", provider.source_name)
 
     def disable(self, provider: str, reason: str) -> None:
         """Marca um provedor como indisponível, com o motivo legível.

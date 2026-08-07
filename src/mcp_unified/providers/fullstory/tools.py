@@ -26,6 +26,39 @@ NOTABLE_EVENTS = frozenset(
 )
 
 
+class FullStorySessionProvider:
+    """Implementa `SessionProvider`.
+
+    Existe para que `correlation/` peça "o provedor de sessão" em vez de pedir
+    "fullstory": a correlação depende do *conceito* de sessão, não deste
+    produto. Se um dia outro provedor souber resolver sessões, ele entra aqui
+    sem que a correlação mude.
+    """
+
+    source_name = "fullstory"
+
+    def __init__(self, client: FullStoryClient) -> None:
+        self._client = client
+
+    async def session_events(self, user_id: str, session_id: str) -> list[dict[str, Any]]:
+        payload = await self._client.get_session_events(user_id, session_id)
+        return _extract_events(payload)
+
+    async def sessions_for_user(self, uid: str, *, limit: int = 5) -> list[dict[str, Any]]:
+        payload = await self._client.list_sessions(uid=uid, limit=limit)
+        if isinstance(payload, list):
+            return [s for s in payload if isinstance(s, dict)]
+        if isinstance(payload, dict):
+            for key in ("sessions", "data", "results"):
+                value = payload.get(key)
+                if isinstance(value, list):
+                    return [s for s in value if isinstance(s, dict)]
+        return []
+
+    def session_link(self, user_id: str, session_id: str) -> str:
+        return self._client.session_link(user_id, session_id)
+
+
 class FullStoryTimelineSource:
     """Expõe os eventos de uma sessão como entradas de timeline."""
 
@@ -117,6 +150,7 @@ def register(server: Any, ctx: ServerContext) -> None:
     )
     ctx.add_client("fullstory", client)
     ctx.add_timeline_source(FullStoryTimelineSource(client))
+    ctx.set_session_provider(FullStorySessionProvider(client))
 
     if ctx.enabled(FULLSTORY_CORE):
         _register_core(server, client, ctx)

@@ -95,7 +95,7 @@ def register(server: Any, ctx: ServerContext) -> None:
         Dados sensíveis são redigidos antes de o prompt sair da máquina.
         """
         window = await derive_session_window(
-            ctx.clients.get("fullstory"),
+            ctx.session_provider,
             user_id,
             session_id,
             padding_seconds=corr.window_padding_seconds,

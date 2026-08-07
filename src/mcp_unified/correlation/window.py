@@ -3,38 +3,38 @@
 A janela é o denominador comum entre provedores: todo mundo sabe responder
 "o que aconteceu entre X e Y", mesmo sem entender o conceito de sessão.
 
-Derivar a janela **a partir de uma sessão** é a única parte da correlação que
-precisa de um provedor de sessão (hoje, FullStory). Quando não há um
-configurado, as tools exigem `from`/`to` explícitos — e dizem isso.
+Derivar a janela **a partir de uma sessão** é a única operação da correlação
+que depende de um provedor específico — alguém tem que saber o que é uma
+sessão. Essa dependência é expressa pelo protocolo `SessionProvider`, não pelo
+nome de um produto: se um dia outra fonte souber resolver sessões, ela entra
+sem que nada aqui mude.
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
 
 from ..errors import CorrelationError
 from ..models import SessionWindow
+from ..protocols import SessionProvider
 from ..providers.fullstory.analytics import event_timestamp
-from ..providers.fullstory.tools import _extract_events
 
 
 async def derive_session_window(
-    fullstory_client: Any | None,
+    session_provider: SessionProvider | None,
     user_id: str,
     session_id: str,
     *,
     padding_seconds: int = 60,
 ) -> SessionWindow:
     """Busca os eventos da sessão e extrai a janela [primeiro, último] + padding."""
-    if fullstory_client is None:
+    if session_provider is None:
         raise CorrelationError(
             "Nenhum provedor de sessão configurado (FULLSTORY_API_KEY ausente). "
             "Use as tools que aceitam janela explícita (from/to) ou configure a FullStory."
         )
 
-    payload = await fullstory_client.get_session_events(user_id, session_id)
-    events = _extract_events(payload)
+    events = await session_provider.session_events(user_id, session_id)
     if not events:
         raise CorrelationError(
             f"Sessão {user_id}:{session_id} não retornou eventos — "

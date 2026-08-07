@@ -198,3 +198,56 @@ async def test_llm_sem_provedor_e_desabilitado_com_orientacao(fake_env):
     async with Client(server) as client:
         names = {t.name for t in (await client.list_tools()).tools}
     assert "analyze_incident_timeline" not in names
+
+
+# ------------------------------------------- o protocolo não vaza nome de provedor
+
+
+def test_correlacao_nao_nomeia_nenhum_provedor():
+    """Guarda-corpo do invariante declarado no AGENTS.md.
+
+    A correlação depende do *conceito* de sessão, não do produto que a fornece.
+    No dia em que alguém escrever `clients.get("fullstory")` dentro de
+    `correlation/`, este teste falha — e a conversa acontece no code review, não
+    seis meses depois quando plugar outra fonte virar refatoração.
+    """
+    import re
+    from pathlib import Path
+
+    correlation = Path(__file__).parent.parent / "src" / "mcp_unified" / "correlation"
+    nomes = re.compile(r'"(fullstory|datadog|servicenow|msgraph)"')
+
+    ofensores = {
+        arquivo.name: sorted(set(nomes.findall(arquivo.read_text(encoding="utf-8"))))
+        for arquivo in correlation.glob("*.py")
+        if nomes.search(arquivo.read_text(encoding="utf-8"))
+    }
+    assert not ofensores, (
+        f"correlation/ referencia provedor pelo nome: {ofensores}. "
+        "Use os protocolos de protocols.py."
+    )
+
+
+async def test_provedor_de_sessao_e_registrado_pelo_protocolo(fake_env):
+    from mcp_unified.protocols import SessionProvider
+
+    ctx = get_context(build_server(profile="ide"))
+    assert ctx.session_provider is not None
+    assert isinstance(ctx.session_provider, SessionProvider)
+    assert ctx.session_provider.source_name == "fullstory"
+
+
+async def test_sem_provedor_de_sessao_a_correlacao_orienta(monkeypatch):
+    """Sem FullStory, derivar janela de sessão é impossível — e a mensagem diz isso."""
+    for key in ("FULLSTORY_API_KEY", "DD_API_KEY", "DD_APP_KEY"):
+        monkeypatch.delenv(key, raising=False)
+
+    ctx = get_context(build_server(profile="ide"))
+    assert ctx.session_provider is None
+
+    from mcp_unified.correlation.window import derive_session_window
+    from mcp_unified.errors import CorrelationError
+
+    with pytest.raises(CorrelationError) as exc:
+        await derive_session_window(None, "u", "s")
+    assert "FULLSTORY_API_KEY" in str(exc.value)
