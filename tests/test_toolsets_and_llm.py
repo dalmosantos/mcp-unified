@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import sys
+
 import pytest
 import respx
 from mcp import Client
 
+from mcp_unified.__main__ import main
+from mcp_unified.config import Settings, reveal
 from mcp_unified.llm.schemas import IncidentAnalysis, QueryTranslation
 from mcp_unified.server import build_server, get_context
 from mcp_unified.toolsets import (
@@ -81,7 +85,135 @@ async def test_contagem_de_tools_por_perfil(fake_env, monkeypatch):
         async with Client(build_server(profile=perfil)) as client:
             contagens[perfil] = len((await client.list_tools()).tools)
 
-    assert contagens == {"ide": 32, "sre-agent": 51, "all": 73}
+    assert contagens == {"ide": 32, "sre-agent": 54, "all": 73}
+
+
+# --------------------------------------------------- credenciais via arquivo
+
+
+def test_env_file_carrega_de_fora_do_diretorio_atual(tmp_path, monkeypatch):
+    """O mecanismo em que as três configurações de IDE se apoiam.
+
+    Sem isto, o servidor depende de achar um `.env` no diretório de trabalho —
+    e quem escolhe esse diretório é a IDE, não nós.
+    """
+    for key in ("FULLSTORY_API_KEY", "FULLSTORY_ORG_ID", "DD_API_KEY", "DD_APP_KEY"):
+        monkeypatch.delenv(key, raising=False)
+
+    env = tmp_path / "credenciais.env"
+    env.write_text("FULLSTORY_API_KEY=abc\nFULLSTORY_ORG_ID=org\n", encoding="utf-8")
+
+    # Um diretório sem `.env` nenhum: só o caminho explícito pode funcionar.
+    monkeypatch.chdir(tmp_path / "..")
+    assert not Settings().fullstory.configured
+    assert Settings(env_file=env).fullstory.configured
+
+
+def test_env_file_inexistente_falha_em_vez_de_subir_vazio(tmp_path, monkeypatch, capsys):
+    """Subir sem credencial e sem explicação é o pior desfecho possível aqui."""
+    monkeypatch.setattr(sys, "argv", ["mcp-unified", "--env-file", str(tmp_path / "nao-existe")])
+
+    assert main() == 2
+    assert "--env-file não encontrado" in capsys.readouterr().err
+
+
+def _cofre(tmp_path, **segredos) -> str:
+    """Monta um diretório no formato que Docker e Kubernetes usam: um arquivo por variável."""
+    d = tmp_path / "run-secrets"
+    d.mkdir()
+    for nome, valor in segredos.items():
+        (d / nome).write_text(valor, encoding="utf-8")
+    return str(d)
+
+
+def test_secrets_dir_carrega_um_arquivo_por_credencial(tmp_path, monkeypatch):
+    monkeypatch.delenv("DD_API_KEY", raising=False)
+    cofre = _cofre(tmp_path, DD_API_KEY="do-cofre")
+
+    assert reveal(Settings(secrets_dir=cofre).datadog.api_key) == "do-cofre"
+
+
+def test_cofre_ganha_do_env_file(tmp_path, monkeypatch):
+    """A inversão deliberada da ordem padrão do pydantic-settings.
+
+    O padrão é `env > dotenv > cofre`, e erra no caso que o cofre existe para
+    resolver: container com `/run/secrets` montado e um `.env` esquecido na
+    imagem usaria o `.env` — credencial errada, sem erro, provavelmente a
+    antiga. Se este teste falhar, `settings_customise_sources` sumiu.
+    """
+    monkeypatch.delenv("DD_API_KEY", raising=False)
+    cofre = _cofre(tmp_path, DD_API_KEY="do-cofre")
+    arquivo = tmp_path / "esquecido.env"
+    arquivo.write_text("DD_API_KEY=do-arquivo\n", encoding="utf-8")
+
+    assert reveal(Settings(env_file=arquivo, secrets_dir=cofre).datadog.api_key) == "do-cofre"
+
+
+def test_ambiente_ganha_do_cofre(tmp_path, monkeypatch):
+    """O override explícito continua no topo — é como Kubernetes e as IDEs injetam."""
+    cofre = _cofre(tmp_path, DD_API_KEY="do-cofre")
+    monkeypatch.setenv("DD_API_KEY", "do-ambiente")
+
+    assert reveal(Settings(secrets_dir=cofre).datadog.api_key) == "do-ambiente"
+
+
+def test_secrets_dir_inexistente_falha_em_vez_de_subir_vazio(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["mcp-unified", "--secrets-dir", str(tmp_path / "nao-existe")])
+
+    assert main() == 2
+    assert "--secrets-dir não é um diretório" in capsys.readouterr().err
+
+
+def test_credencial_nao_aparece_em_repr_nem_em_log(monkeypatch):
+    """A proteção que o `SecretStr` compra: vazar por acidente deixa de ser possível.
+
+    Nada hoje loga as credenciais — mas `logger.debug("%s", settings)` é o tipo
+    de linha que alguém acrescenta numa depuração e esquece. Com `SecretStr`,
+    essa linha vira um não-evento em vez de um incidente.
+    """
+    monkeypatch.setenv("DD_API_KEY", "chave-secreta-de-verdade")
+    monkeypatch.setenv("DD_APP_KEY", "outra-chave-secreta")
+    monkeypatch.setenv("SNOW_PASSWORD", "senha-secreta")
+
+    s = Settings()
+    superficie = " ".join(
+        [repr(s.datadog), str(s.datadog), f"{s.datadog.api_key}", repr(s.servicenow)]
+    )
+
+    for segredo in ("chave-secreta-de-verdade", "outra-chave-secreta", "senha-secreta"):
+        assert segredo not in superficie, f"{segredo!r} vazou em repr/str/f-string"
+    assert "**********" in superficie
+
+    # E continua utilizável onde precisa ser.
+    assert reveal(s.datadog.api_key) == "chave-secreta-de-verdade"
+
+
+def test_credencial_chega_intacta_no_header(monkeypatch):
+    """O contraponto do teste acima: mascarar não pode quebrar a autenticação.
+
+    É o erro que o `SecretStr` convida — interpolar o campo direto numa
+    f-string manda `**********` para o upstream, e o sintoma é um 403 que
+    parece problema de permissão.
+    """
+    from mcp_unified.providers.datadog.client import DatadogClient
+    from mcp_unified.providers.servicenow.client import ServiceNowClient
+
+    monkeypatch.setenv("DD_API_KEY", "dd-chave")
+    monkeypatch.setenv("DD_APP_KEY", "dd-app")
+    monkeypatch.setenv("SNOW_INSTANCE", "dev")
+    monkeypatch.setenv("SNOW_USERNAME", "usuario")
+    monkeypatch.setenv("SNOW_PASSWORD", "senha")
+    s = Settings()
+
+    dd = DatadogClient(s.datadog)
+    assert dd._client.headers["DD-API-KEY"] == "dd-chave"
+    assert dd._client.headers["DD-APPLICATION-KEY"] == "dd-app"
+
+    import base64
+
+    snow = ServiceNowClient(s.servicenow)
+    autorizacao = snow._client.headers["Authorization"]
+    assert base64.b64decode(autorizacao.removeprefix("Basic ")).decode() == "usuario:senha"
 
 
 async def test_provedor_ausente_nao_registra_suas_tools(fake_env):

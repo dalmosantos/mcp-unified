@@ -12,7 +12,7 @@ from typing import Protocol, TypeVar, runtime_checkable
 
 from pydantic import BaseModel
 
-from ..config import LLMSettings
+from ..config import LLMSettings, reveal
 from ..errors import ConfigurationError
 
 SchemaT = TypeVar("SchemaT", bound=BaseModel)
@@ -66,12 +66,12 @@ def build_provider(settings: LLMSettings) -> LLMProvider:
     if settings.provider == "anthropic":
         from .providers.anthropic import AnthropicProvider
 
-        return AnthropicProvider(model=model, api_key=settings.api_key)
+        return AnthropicProvider(model=model, api_key=reveal(settings.api_key))
 
     if settings.provider == "openai":
         from .providers.openai import OpenAIProvider
 
-        return OpenAIProvider(model=model, api_key=settings.api_key, base_url=settings.base_url)
+        return OpenAIProvider(model=model, api_key=reveal(settings.api_key), base_url=settings.base_url)
 
     from .providers.openai_compat import OpenAICompatProvider
 
@@ -80,4 +80,4 @@ def build_provider(settings: LLMSettings) -> LLMProvider:
             "MCP_LLM_BASE_URL é obrigatório com 'openai-compat' "
             "(ex: http://localhost:11434/v1 para Ollama)."
         )
-    return OpenAICompatProvider(model=model, base_url=settings.base_url, api_key=settings.api_key)
+    return OpenAICompatProvider(model=model, base_url=settings.base_url, api_key=reveal(settings.api_key))

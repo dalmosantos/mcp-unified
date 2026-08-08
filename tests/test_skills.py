@@ -102,6 +102,60 @@ async def test_tools_citadas_existem(path: Path, monkeypatch: pytest.MonkeyPatch
     )
 
 
+@pytest.mark.parametrize("path", skill_files(), ids=lambda p: p.parent.name)
+async def test_skill_cabe_no_perfil_que_as_ides_carregam(path: Path, monkeypatch):
+    """Uma skill não pode depender de tool fora do perfil que as IDEs sobem.
+
+    `.mcp.json`, `.vscode/mcp.json` e `.agents/mcp_config.json` carregam
+    `sre-agent`. Uma skill que cite tool de fora dele passa no teste de
+    existência e ainda assim não funciona para o time — foi exatamente o que
+    aconteceu quando `sre-business-impact` chegou pedindo Product Analytics.
+
+    A exceção são os dois toolsets legitimamente opcionais: `datadog-apm` (nem
+    toda conta tem APM) e `llm` (exige provedor de modelo configurado). Skills
+    podem citá-los, mas só sob condicional — e por isso o allowlist é derivado
+    dos toolsets, não escrito à mão.
+    """
+    for key, value in ALL_ENV.items():
+        monkeypatch.setenv(key, value)
+
+    async with Client(build_server(profile="sre-agent")) as client:
+        base = {t.name for t in (await client.list_tools()).tools}
+    async with Client(build_server(toolsets="datadog-apm,llm")) as client:
+        opcionais = {t.name for t in (await client.list_tools()).tools}
+
+    fora = sorted(cited_tools(path.read_text(encoding="utf-8")) - base - opcionais)
+    assert not fora, (
+        f"{path.parent.name} depende de tools fora do perfil `sre-agent`: {fora}. "
+        "Inclua o toolset no perfil (toolsets.py) ou torne o uso condicional."
+    )
+
+
+def test_skills_estao_expostas_no_padrao_agents():
+    """`.agents/skills/` é o que leva as skills para fora do Claude Code.
+
+    Devin CLI e Antigravity leem esse diretório. Como são links simbólicos para
+    `skills/`, o modo de falha real não é divergência de conteúdo — é um clone
+    no Windows sem `core.symlinks`, onde o link vira um arquivo de texto com o
+    caminho dentro. Comparar o conteúdo pega os dois casos de uma vez.
+    """
+    espelho = Path(__file__).parent.parent / ".agents" / "skills"
+    assert espelho.is_dir(), ".agents/skills/ não existe — as skills não saem do Claude Code"
+
+    for origem in skill_files():
+        copia = espelho / origem.parent.name / "SKILL.md"
+        assert copia.is_file(), (
+            f"{origem.parent.name} não aparece em .agents/skills/. "
+            "Adicionou uma skill? Crie o link: "
+            f"ln -s ../../skills/{origem.parent.name} .agents/skills/{origem.parent.name}"
+        )
+        assert copia.read_text(encoding="utf-8") == origem.read_text(encoding="utf-8"), (
+            f".agents/skills/{origem.parent.name} divergiu de skills/. "
+            "Num clone Windows sem `git config core.symlinks true`, o link vira "
+            "um arquivo de texto com o caminho dentro."
+        )
+
+
 def test_readme_das_skills_lista_todas():
     readme = (SKILLS_DIR / "README.md").read_text(encoding="utf-8")
     for path in skill_files():
@@ -115,6 +169,15 @@ PLUGIN_FILES = [
     Path(__file__).parent.parent / ".claude-plugin" / "marketplace.json",
     Path(__file__).parent.parent / ".mcp.json",
 ]
+
+# Configurações versionadas, uma por cliente MCP. A chave externa muda entre
+# eles — o VS Code usa `servers`, o resto usa `mcpServers`.
+IDE_CONFIGS = {
+    ".mcp.json": "mcpServers",
+    ".vscode/mcp.json": "servers",
+    ".agents/mcp_config.json": "mcpServers",
+    ".devin/mcp_config.json": "mcpServers",
+}
 
 
 @pytest.mark.parametrize("path", PLUGIN_FILES, ids=lambda p: p.name)
@@ -134,6 +197,31 @@ def test_plugin_e_marketplace_concordam():
     listed = {p["name"] for p in market["plugins"]}
     assert plugin["name"] in listed, (
         f"plugin.json declara '{plugin['name']}', ausente do marketplace.json"
+    )
+
+
+@pytest.mark.parametrize("rel,chave", sorted(IDE_CONFIGS.items()))
+def test_config_de_ide_aponta_para_o_perfil_certo(rel: str, chave: str):
+    """As três configurações versionadas precisam concordar entre si.
+
+    Divergir aqui é caro: o time descobre pela ausência de tools no meio de um
+    incidente, não por um erro na subida.
+    """
+    import json
+
+    path = Path(__file__).parent.parent / rel
+    assert path.exists(), f"{rel} não existe"
+
+    servers = json.loads(path.read_text(encoding="utf-8"))[chave]
+    assert "mcp-unified" in servers, f"{rel}: servidor não se chama 'mcp-unified'"
+    args = servers["mcp-unified"]["args"]
+
+    assert args[args.index("--profile") + 1] == "sre-agent", (
+        f"{rel}: perfil precisa ser `sre-agent` — é o que as cinco skills exigem"
+    )
+    assert "--env-file" in args, (
+        f"{rel}: sem --env-file, o servidor depende do diretório de trabalho "
+        "que a IDE escolher e sobe sem credencial nenhuma"
     )
 
 

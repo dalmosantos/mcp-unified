@@ -1,7 +1,7 @@
 {
   "name": "mcp-unified-sre",
   "version": "0.1.0",
-  "description": "Investigação de incidentes cruzando o comportamento do usuário no frontend (FullStory) com a telemetria de backend (Datadog), o histórico de chamados (ServiceNow) e a documentação (SharePoint/Teams). Inclui o servidor MCP com 73 tools, tools de correlação que derivam a janela temporal da sessão automaticamente, e quatro skills de SRE — triagem, impacto no usuário, post-mortem e diagnóstico de configuração.",
+  "description": "Investigação de incidentes cruzando o comportamento do usuário no frontend (FullStory) com a telemetria de backend (Datadog), o histórico de chamados (ServiceNow) e a documentação (SharePoint/Teams). Inclui o servidor MCP com 73 tools, tools de correlação que derivam a janela temporal da sessão automaticamente, e cinco skills de SRE — triagem, impacto no usuário, impacto no negócio, post-mortem e diagnóstico de configuração.",
   "author": {
     "name": "dalmosantos"
   },
@@ -26,6 +26,8 @@
     "post-mortem",
     "triagem",
     "mttr",
-    "experiência-do-usuário"
+    "experiência-do-usuário",
+    "product-analytics",
+    "impacto-no-negócio"
   ]
 }

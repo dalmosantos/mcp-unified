@@ -13,7 +13,7 @@ import base64
 from typing import Any
 from urllib.parse import quote, urlencode
 
-from ...config import FullStorySettings
+from ...config import FullStorySettings, reveal
 from ...http import BaseApiClient
 
 API_V2 = "v2"
@@ -28,7 +28,7 @@ class FullStoryClient(BaseApiClient):
 
     @staticmethod
     def _auth_headers(settings: FullStorySettings) -> dict[str, str]:
-        token = settings.api_key or ""
+        token = reveal(settings.api_key)
         # O original aceita a chave já em Basic ou crua; normaliza aqui.
         if not token.startswith("Basic "):
             probe = token

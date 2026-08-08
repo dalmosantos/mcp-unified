@@ -1,8 +1,8 @@
 """Grupos de tools e perfis de consumo.
 
-72 tools num só servidor consomem contexto demais numa IDE. Os grupos existem
-para que cada consumidor carregue só o recorte de que precisa: a IDE trabalha
-com 29, o agente de SRE com 48.
+73 tools num só servidor consomem contexto demais numa IDE. Os grupos existem
+para que cada consumidor carregue só o recorte de que precisa: `ide` registra
+32, `sre-agent` registra 54.
 """
 
 from __future__ import annotations
@@ -56,12 +56,18 @@ ALL_TOOLSETS: dict[str, ToolsetInfo] = {
 
 
 PROFILES: dict[str, list[str]] = {
-    # Investigação interativa: superfície enxuta, contexto é escasso.
+    # Investigação interativa mínima: superfície enxuta, contexto é escasso.
+    # Cobre triagem e impacto no usuário, mas *não* impacto de negócio nem
+    # post-mortem — quem usa as cinco skills quer `sre-agent`.
     "ide": [FULLSTORY_CORE, DATADOG_CORE, CORRELATION],
-    # O agente precisa das fontes históricas e do impacto ao vivo.
+    # A união do que as cinco skills de `skills/` precisam. É o perfil padrão
+    # das configurações de IDE, apesar do nome: serve tanto o agente autônomo
+    # quanto uma pessoa investigando. Product Analytics entra aqui porque
+    # `sre-business-impact` depende dele para funil e conversão.
     "sre-agent": [
         DATADOG_CORE,
         DATADOG_RUM,
+        DATADOG_PA,
         SERVICENOW,
         MSGRAPH,
         FULLSTORY_CORE,

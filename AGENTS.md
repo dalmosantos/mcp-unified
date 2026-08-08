@@ -13,9 +13,14 @@ Servidor MCP em Python que unifica quatro fontes de dados operacionais —
 FullStory, Datadog, ServiceNow e Microsoft Graph — e expõe tools de correlação
 que cruzam a sessão do usuário no frontend com a telemetria de backend.
 
-Dois consumidores previstos: uma IDE via stdio (hoje) e um agente autônomo de
-SRE via HTTP (ver [`sre-agente-autonomo.md`](sre-agente-autonomo.md)). O
-[`PLAN.md`](PLAN.md) explica as decisões de arquitetura e por quê.
+Duas topologias: **stdio** (seis clientes hoje — Claude Code, VS Code, Copilot,
+Windsurf, Antigravity, Devin CLI) e **HTTP**, para o agente autônomo de SRE
+(ver [`sre-agente-autonomo.md`](sre-agente-autonomo.md)).
+
+As camadas e o fluxo de uma chamada estão em
+[`docs/arquitetura.md`](docs/arquitetura.md); o registro em cada cliente, em
+[`docs/ide-setup.md`](docs/ide-setup.md). O [`PLAN.md`](PLAN.md) é histórico:
+explica por que cada decisão foi tomada, e tem trechos marcados como superseded.
 
 ## Ambiente
 
@@ -29,13 +34,25 @@ Python ≥ 3.10. Não há `uv` nesta máquina; use `venv` + `pip`.
 ## Comandos
 
 ```bash
-.venv/bin/pytest -q                        # 91 testes, sem rede, sem credencial
+.venv/bin/pytest -q                        # 111 testes, sem rede, sem credencial
 .venv/bin/ruff check src/ tests/           # lint (deve passar limpo)
 .venv/bin/ruff check --fix src/ tests/
 
-.venv/bin/mcp-unified --profile ide --list-tools    # inventário sem subir o servidor
-.venv/bin/python scripts/demo_upstream.py           # upstream falso, para exercitar sem conta
+.venv/bin/mcp-unified --profile sre-agent --list-tools   # inventário sem subir o servidor
+.venv/bin/python scripts/demo_upstream.py                # upstream falso, sem conta
 ```
+
+Dois flags de credencial, para os dois transportes:
+
+- `--env-file <arquivo>` — stdio, máquina de desenvolvedor. Existe porque cada
+  cliente MCP injeta segredo de um jeito, ou de nenhum, e o diretório de
+  trabalho do processo lançado é imprevisível.
+- `--secrets-dir <dir>` — HTTP. Um arquivo por credencial, nomeado igual à
+  variável, como Docker e Kubernetes montam em `/run/secrets`.
+
+**Precedência: ambiente > cofre > arquivo > default.** As duas primeiras
+posições são o padrão do `pydantic-settings`; a inversão entre cofre e arquivo
+é nossa — ver invariante 8.
 
 Sempre rode `pytest` **e** `ruff` antes de considerar uma mudança pronta.
 
@@ -98,6 +115,51 @@ No modo `both`, cair de identidade para tempo é aceitável; silenciar não é.
 Sem o aviso, quem consome interpreta ruído de outros usuários como evidência
 sobre este usuário. O campo `fallback_reason` do envelope existe para isso.
 
+### 6. As quatro configurações de IDE não divergem
+
+`.mcp.json`, `.vscode/mcp.json`, `.agents/mcp_config.json` e
+`.devin/mcp_config.json` registram o mesmo servidor para clientes diferentes.
+Todas precisam citar o perfil `sre-agent` e passar `--env-file`.
+
+Divergir aqui falha do pior jeito possível: o servidor sobe, as tools aparecem,
+e só faltam algumas — o time descobre no meio de um incidente, não na subida.
+`test_config_de_ide_aponta_para_o_perfil_certo` guarda isso.
+
+### 7. Toda skill cabe no perfil que as IDEs carregam
+
+Uma skill que cite tool fora de `sre-agent` passa no teste de existência e
+mesmo assim não funciona para ninguém. As exceções são `datadog-apm` e `llm`,
+que nem toda conta tem — skills podem citá-los, mas só sob condicional
+("se `X` estiver disponível"). `test_skill_cabe_no_perfil_que_as_ides_carregam`
+deriva o allowlist dos próprios toolsets, então não há lista de nomes a manter.
+
+### 8. O cofre ganha do `.env`
+
+`settings_customise_sources` em `config.py` inverte a ordem padrão do
+`pydantic-settings`, que seria `env > dotenv > cofre`. Não restaure o padrão.
+
+O padrão erra exatamente no caso que o `--secrets-dir` existe para resolver:
+um container com `/run/secrets` montado pelo orquestrador e um `.env` esquecido
+na imagem usaria o `.env` — credencial errada, sem erro nenhum, e provavelmente
+a antiga. Um diretório de segredos só existe quando alguém o montou de
+propósito. `test_cofre_ganha_do_env_file` guarda isso.
+
+### 9. Credencial é `SecretStr`, e `reveal()` só no cliente HTTP
+
+Todo campo de credencial em `config.py` é `SecretStr` — `str()` e `repr()`
+devolvem `**********`, então log e traceback ficam protegidos por padrão.
+`config.reveal()` é o único ponto onde o valor real aparece; se você precisou
+dela fora de um cliente HTTP, pare e releia o que está fazendo.
+
+O preço disso é um erro fácil na direção oposta: interpolar o campo direto numa
+f-string manda `**********` para o upstream, e o sintoma é um 403 que parece
+problema de permissão. Dois testes guardam os dois lados —
+`test_credencial_nao_aparece_em_repr_nem_em_log` e
+`test_credencial_chega_intacta_no_header`.
+
+Identificador não é segredo: `org_id`, `instance`, `username`, `client_id` e
+`tenant_id` continuam `str`, porque aparecem em URL e em mensagem de erro útil.
+
 ---
 
 ## Onde as coisas ficam
@@ -115,7 +177,26 @@ src/mcp_unified/
 ├── correlation/       # window · identity · timeline · tools
 ├── llm/               # base.py (Protocol, sem SDK) · providers/ · redact · schemas
 └── security/          # validation · rate_limit · oauth · middleware
+
+skills/                # fonte única das cinco skills
+agents/                # subagentes (hoje só session-context)
+docs/                  # ide-setup (instalar) · arquitetura (como funciona)
+
+.claude-plugin/        # plugin.json + marketplace.json — empacotamento Claude Code
+.mcp.json              # Claude Code
+.vscode/mcp.json       # VS Code e GitHub Copilot — chave `servers`, não `mcpServers`
+.agents/
+├── mcp_config.json    # Antigravity
+└── skills/            # LINKS SIMBÓLICOS para skills/ — Devin CLI e Antigravity leem daqui
+.devin/mcp_config.json # Devin CLI
 ```
+
+**`.agents/skills/` é link simbólico, não cópia.** Adicionou uma skill? Crie o
+link também, senão ela só existe no Claude Code:
+`ln -s ../../skills/<nome> .agents/skills/<nome>`. O
+`test_skills_estao_expostas_no_padrao_agents` compara conteúdo, o que pega tanto
+o link esquecido quanto um clone Windows sem `core.symlinks` (onde o link vira
+um arquivo de texto com o caminho dentro).
 
 **Ordem de registro em `server.py`:** provedores primeiro (registram tools *e*
 se anunciam como fontes), correlação e LLM depois — para já enxergarem todas as
@@ -133,9 +214,17 @@ fontes disponíveis. Não inverta.
    automaticamente.
 4. Adicione o toolset em `toolsets.py` e inclua nos perfis relevantes.
 5. Registre o módulo no laço de `server.build_server`.
-6. Atualize as contagens em `README.md` e no teste
-   `test_contagem_de_tools_por_perfil` — ele existe justamente para o número
-   não divergir da documentação.
+6. Atualize as contagens. `test_contagem_de_tools_por_perfil` é a fonte de
+   verdade e falha primeiro; os cinco lugares que repetem o número são
+   `README.md` (tabela de perfis), `docs/ide-setup.md` (tabela de perfis),
+   `PLAN.md` (tabela e bloco de verificação), o docstring de `toolsets.py` e as
+   `description` de `.claude-plugin/`.
+
+> **Cuidado ao conferir contagem pelo `--list-tools`.** Ele reporta o que foi
+> registrado *neste ambiente*. O toolset `llm` só registra suas 2 tools se o SDK
+> do provedor estiver instalado (`pip install -e ".[llm-anthropic]"`), então sem
+> ele o perfil `all` mostra 71 em vez de 73 — sem erro nenhum. O teste usa
+> `openai-compat`, que não precisa de SDK, e por isso vê as 73.
 
 ## Como adicionar uma tool
 
@@ -179,11 +268,14 @@ têm teste próprio.
 
 ## Skills
 
-`skills/` contém três skills que ensinam um agente a *usar* o servidor. Elas
+`skills/` contém cinco skills que ensinam um agente a *usar* o servidor. Elas
 são documentação que o modelo lê como verdade, então:
 
 - **Renomeou uma tool? Atualize a skill.** `tests/test_skills.py` varre cada
   `SKILL.md` atrás de tools citadas e falha se alguma não existir mais.
+- **Adicionou uma skill? Duas coisas além do arquivo.** Ela precisa caber no
+  perfil `sre-agent` (invariante 7) e ganhar o link em `.agents/skills/`, senão
+  fica só no Claude Code — Devin CLI e Antigravity leem de lá.
 - A divisão é por **pergunta**, não por provedor. Uma skill "FullStory" isolada
   recriaria a fragmentação que o servidor existe para eliminar.
 - `description` no frontmatter é o gatilho — inclua as frases que o usuário

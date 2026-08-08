@@ -8,12 +8,26 @@ conveniência e vira requisito: quase ninguém terá os quatro configurados.
 
 from __future__ import annotations
 
-from typing import Literal
+from pathlib import Path
+from typing import Any, Literal
 
-from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, SecretStr, field_validator
+from pydantic_settings import BaseSettings, PydanticBaseSettingsSource, SettingsConfigDict
 
 from .models import CorrelationMode
+
+
+def reveal(value: SecretStr | None) -> str:
+    """Extrai o valor de um segredo, na hora de usá-lo.
+
+    Toda credencial é `SecretStr`, cujo `str()` e `repr()` devolvem
+    `**********`. Isso protege log e traceback por padrão, mas cobra o preço
+    de quebrar em silêncio quem interpolar o campo direto numa f-string — o
+    header sairia com os asteriscos dentro. Esta função é o único ponto onde o
+    valor real aparece; se você precisou dela fora de um cliente HTTP, pare e
+    releia o que está fazendo.
+    """
+    return value.get_secret_value() if value else ""
 
 
 def _strip_scheme(url: str) -> str:
@@ -31,9 +45,31 @@ def _strip_scheme(url: str) -> str:
 class _Base(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Põe o cofre **acima** do `.env`, invertendo o padrão do pydantic.
+
+        Por padrão a ordem é `env > dotenv > cofre`, e isso erra justamente no
+        caso que o cofre existe para resolver: um container com `/run/secrets`
+        montado pelo orquestrador e um `.env` esquecido na imagem usaria o
+        `.env` — credencial errada, sem erro nenhum, e provavelmente a antiga.
+
+        Um diretório de segredos só existe quando alguém o montou de
+        propósito, então ele ganha do arquivo. A variável de ambiente continua
+        no topo: é o override explícito, e é como Kubernetes e as IDEs injetam.
+        """
+        return (init_settings, env_settings, file_secret_settings, dotenv_settings)
+
 
 class FullStorySettings(_Base):
-    api_key: str | None = Field(default=None, alias="FULLSTORY_API_KEY")
+    api_key: SecretStr | None = Field(default=None, alias="FULLSTORY_API_KEY")
     org_id: str | None = Field(default=None, alias="FULLSTORY_ORG_ID")
     datacenter: Literal["US", "EU1"] = Field(default="US", alias="FULLSTORY_DATACENTER")
     # Override do host. Existe para o modo demo (scripts/demo_upstream.py) e
@@ -56,8 +92,8 @@ class FullStorySettings(_Base):
 
 
 class DatadogSettings(_Base):
-    api_key: str | None = Field(default=None, alias="DD_API_KEY")
-    app_key: str | None = Field(default=None, alias="DD_APP_KEY")
+    api_key: SecretStr | None = Field(default=None, alias="DD_API_KEY")
+    app_key: SecretStr | None = Field(default=None, alias="DD_APP_KEY")
     site: str = Field(default="datadoghq.com", alias="DD_SITE")
     logs_site: str | None = Field(default=None, alias="DD_LOGS_SITE")
     metrics_site: str | None = Field(default=None, alias="DD_METRICS_SITE")
@@ -88,9 +124,9 @@ class ServiceNowSettings(_Base):
     instance: str | None = Field(default=None, alias="SNOW_INSTANCE")
     auth_mode: Literal["basic", "oauth2"] = Field(default="basic", alias="SNOW_AUTH")
     username: str | None = Field(default=None, alias="SNOW_USERNAME")
-    password: str | None = Field(default=None, alias="SNOW_PASSWORD")
+    password: SecretStr | None = Field(default=None, alias="SNOW_PASSWORD")
     client_id: str | None = Field(default=None, alias="SNOW_CLIENT_ID")
-    client_secret: str | None = Field(default=None, alias="SNOW_CLIENT_SECRET")
+    client_secret: SecretStr | None = Field(default=None, alias="SNOW_CLIENT_SECRET")
 
     @property
     def configured(self) -> bool:
@@ -111,7 +147,7 @@ class ServiceNowSettings(_Base):
 class MSGraphSettings(_Base):
     tenant_id: str | None = Field(default=None, alias="MSGRAPH_TENANT_ID")
     client_id: str | None = Field(default=None, alias="MSGRAPH_CLIENT_ID")
-    client_secret: str | None = Field(default=None, alias="MSGRAPH_CLIENT_SECRET")
+    client_secret: SecretStr | None = Field(default=None, alias="MSGRAPH_CLIENT_SECRET")
 
     @property
     def configured(self) -> bool:
@@ -139,7 +175,7 @@ class LLMSettings(_Base):
     )
     model: str | None = Field(default=None, alias="MCP_LLM_MODEL")
     base_url: str | None = Field(default=None, alias="MCP_LLM_BASE_URL")
-    api_key: str | None = Field(default=None, alias="MCP_LLM_API_KEY")
+    api_key: SecretStr | None = Field(default=None, alias="MCP_LLM_API_KEY")
     effort: Literal["low", "medium", "high"] = Field(default="medium", alias="MCP_LLM_EFFORT")
     max_timeline_entries: int = Field(default=300, alias="MCP_LLM_MAX_TIMELINE_ENTRIES")
 
@@ -167,17 +203,42 @@ class ServerSettings(_Base):
 
 
 class Settings:
-    """Agregador. Instanciado uma vez e passado adiante."""
+    """Agregador. Instanciado uma vez e passado adiante.
 
-    def __init__(self) -> None:
-        self.fullstory = FullStorySettings()
-        self.datadog = DatadogSettings()
-        self.servicenow = ServiceNowSettings()
-        self.msgraph = MSGraphSettings()
-        self.correlation = CorrelationSettings()
-        self.llm = LLMSettings()
-        self.security = SecuritySettings()
-        self.server = ServerSettings()
+    `env_file` existe por causa das IDEs. Cada cliente MCP tem uma sintaxe
+    própria — ou nenhuma — para injetar segredo no bloco `env` da configuração,
+    e o diretório de trabalho do processo lançado é imprevisível. Apontar um
+    arquivo explícito é o único mecanismo que funciona igual em todos eles.
+
+    `secrets_dir` existe por causa do transporte HTTP. Ali o servidor é um
+    processo de vida longa e compartilhada, e um `.env` em texto plano deixa de
+    ser aceitável: Docker e Kubernetes entregam segredo como arquivo em
+    `/run/secrets/<NOME_DA_VARIAVEL>`, que não aparece em `docker inspect` nem
+    no dump de um processo, ao contrário de variável de ambiente.
+
+    Precedência final: **ambiente > cofre > arquivo > default**.
+    """
+
+    def __init__(
+        self,
+        env_file: str | Path | None = None,
+        secrets_dir: str | Path | None = None,
+    ) -> None:
+        # Só repassa quando há caminho: em pydantic-settings, `_env_file=None`
+        # explícito significa "nenhum arquivo", e não "use o padrão da classe".
+        kw: dict[str, Any] = {}
+        if env_file is not None:
+            kw["_env_file"] = env_file
+        if secrets_dir is not None:
+            kw["_secrets_dir"] = secrets_dir
+        self.fullstory = FullStorySettings(**kw)
+        self.datadog = DatadogSettings(**kw)
+        self.servicenow = ServiceNowSettings(**kw)
+        self.msgraph = MSGraphSettings(**kw)
+        self.correlation = CorrelationSettings(**kw)
+        self.llm = LLMSettings(**kw)
+        self.security = SecuritySettings(**kw)
+        self.server = ServerSettings(**kw)
 
     def configured_providers(self) -> dict[str, bool]:
         return {

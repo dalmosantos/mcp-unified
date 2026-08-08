@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from .config import Settings
 from .server import build_server, configure_logging, get_context
@@ -33,6 +34,23 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--profile", help="perfil de toolsets (padrão: ide)")
     parser.add_argument(
+        "--env-file",
+        help=(
+            "arquivo de credenciais a carregar. Use nas IDEs: cada cliente MCP "
+            "injeta variável de ambiente de um jeito e o diretório de trabalho "
+            "do processo é imprevisível. Padrão: .env no diretório atual"
+        ),
+    )
+    parser.add_argument(
+        "--secrets-dir",
+        help=(
+            "diretório com um arquivo por credencial (DD_API_KEY, ...), como "
+            "Docker e Kubernetes montam em /run/secrets. Use no transporte HTTP, "
+            "onde um .env em texto plano não é aceitável. Ganha do --env-file; "
+            "perde para variável de ambiente"
+        ),
+    )
+    parser.add_argument(
         "--toolsets",
         help="lista explícita separada por vírgula; tem precedência sobre --profile",
     )
@@ -57,9 +75,23 @@ def main() -> int:
     args = _parser().parse_args()
     configure_logging(args.log_level)
 
+    # Falhar aqui, alto e claro. Um caminho errado carregaria zero credencial e
+    # o sintoma seria "todos os toolsets desabilitados" — diagnóstico caro numa
+    # IDE, onde o stderr do servidor costuma estar escondido.
+    if args.env_file and not Path(args.env_file).is_file():
+        print(f"erro: --env-file não encontrado: {args.env_file}", file=sys.stderr)
+        return 2
+    if args.secrets_dir and not Path(args.secrets_dir).is_dir():
+        print(f"erro: --secrets-dir não é um diretório: {args.secrets_dir}", file=sys.stderr)
+        return 2
+
     try:
+        settings = Settings(env_file=args.env_file, secrets_dir=args.secrets_dir)
         server = build_server(
-            profile=args.profile, toolsets=args.toolsets, safe_mode=args.safe_mode
+            profile=args.profile,
+            toolsets=args.toolsets,
+            safe_mode=args.safe_mode,
+            settings=settings,
         )
     except ToolsetResolutionError as exc:
         print(f"erro: {exc}", file=sys.stderr)

@@ -1,6 +1,6 @@
 # Skills de SRE para o mcp-unified
 
-Quatro skills que ensinam um agente a **usar bem** as 73 tools do servidor. Elas
+Cinco skills que ensinam um agente a **usar bem** as 73 tools do servidor. Elas
 não adicionam capacidade — adicionam julgamento: qual tool para qual pergunta,
 e quais armadilhas evitar.
 
@@ -10,6 +10,7 @@ e quais armadilhas evitar.
 |---|---|---|
 | [`sre-triage`](sre-triage/SKILL.md) | "o monitor disparou, o que está acontecendo?" | Datadog |
 | [`sre-user-impact`](sre-user-impact/SKILL.md) | "quem foi afetado e o que a pessoa viveu?" | correlação + FullStory |
+| [`sre-business-impact`](sre-business-impact/SKILL.md) | "qual o impacto no negócio/produto?" | Datadog + FullStory + correlação |
 | [`sre-postmortem`](sre-postmortem/SKILL.md) | "como registro isso para a próxima vez?" | ServiceNow, SharePoint/Teams |
 | [`sre-setup`](sre-setup/SKILL.md) | "por que voltou vazio?" · "o que está configurado?" | diagnóstico |
 

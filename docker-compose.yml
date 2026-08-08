@@ -15,8 +15,20 @@ services:
       - "8080"
     ports:
       - "8080:8080"
+    # Padrão: credenciais em texto plano, suficiente para experimentar.
     env_file:
       - .env
+    # Em produção, troque o bloco acima por segredos montados como arquivo.
+    # Um `.env` vira variável de ambiente do container, e variável de ambiente
+    # aparece em `docker inspect` e no dump de um processo; um segredo montado
+    # em /run/secrets, não. Descomente os dois blocos e acrescente
+    # `--secrets-dir /run/secrets` ao `command` acima:
+    #
+    # secrets:
+    #   - FULLSTORY_API_KEY
+    #   - FULLSTORY_ORG_ID
+    #   - DD_API_KEY
+    #   - DD_APP_KEY
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/mcp', timeout=3).status < 500 else 1)"]
@@ -38,3 +50,15 @@ services:
 
 volumes:
   ollama-models:
+
+# O nome de cada segredo precisa bater com o nome da variável: o servidor
+# procura /run/secrets/DD_API_KEY, não /run/secrets/datadog-api-key.
+# secrets:
+#   FULLSTORY_API_KEY:
+#     file: ./secrets/FULLSTORY_API_KEY
+#   FULLSTORY_ORG_ID:
+#     file: ./secrets/FULLSTORY_ORG_ID
+#   DD_API_KEY:
+#     file: ./secrets/DD_API_KEY
+#   DD_APP_KEY:
+#     file: ./secrets/DD_APP_KEY

@@ -13,7 +13,7 @@ from __future__ import annotations
 from typing import Any, Literal
 from urllib.parse import quote
 
-from ...config import DatadogSettings
+from ...config import DatadogSettings, reveal
 from ...http import BaseApiClient
 
 Service = Literal["default", "logs", "metrics"]
@@ -27,8 +27,8 @@ class DatadogClient(BaseApiClient):
         super().__init__(
             (settings.base_url_override or f"https://api.{settings.site}").rstrip("/"),
             headers={
-                "DD-API-KEY": settings.api_key or "",
-                "DD-APPLICATION-KEY": settings.app_key or "",
+                "DD-API-KEY": reveal(settings.api_key),
+                "DD-APPLICATION-KEY": reveal(settings.app_key),
                 "Content-Type": "application/json",
             },
             **kwargs,

@@ -1,6 +1,9 @@
 .env
 .env.*
 !.env.example
+# Segredos montados como arquivo (--secrets-dir). Um arquivo por credencial,
+# com o nome da variável: secrets/DD_API_KEY
+secrets/
 .venv/
 __pycache__/
 *.py[cod]

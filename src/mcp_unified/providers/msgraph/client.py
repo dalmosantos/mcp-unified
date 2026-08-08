@@ -17,7 +17,7 @@ from typing import Any
 
 import httpx
 
-from ...config import MSGraphSettings
+from ...config import MSGraphSettings, reveal
 from ...errors import ProviderError
 from ...http import BaseApiClient
 
@@ -52,7 +52,7 @@ class MSGraphClient(BaseApiClient):
                 data={
                     "grant_type": "client_credentials",
                     "client_id": self.settings.client_id,
-                    "client_secret": self.settings.client_secret,
+                    "client_secret": reveal(self.settings.client_secret),
                     "scope": "https://graph.microsoft.com/.default",
                 },
             )

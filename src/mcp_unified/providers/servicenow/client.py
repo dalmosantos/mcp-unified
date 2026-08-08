@@ -14,7 +14,7 @@ from typing import Any
 
 import httpx
 
-from ...config import ServiceNowSettings
+from ...config import ServiceNowSettings, reveal
 from ...errors import ProviderError
 from ...http import BaseApiClient
 
@@ -33,7 +33,7 @@ class ServiceNowClient(BaseApiClient):
         self._token_expiry: float = 0.0
         headers = {"Accept": "application/json", "Content-Type": "application/json"}
         if settings.auth_mode == "basic":
-            raw = f"{settings.username}:{settings.password}".encode()
+            raw = f"{settings.username}:{reveal(settings.password)}".encode()
             headers["Authorization"] = f"Basic {base64.b64encode(raw).decode()}"
         super().__init__(settings.base_url, headers=headers, **kwargs)
 
@@ -56,7 +56,7 @@ class ServiceNowClient(BaseApiClient):
                 data={
                     "grant_type": "client_credentials",
                     "client_id": self.settings.client_id,
-                    "client_secret": self.settings.client_secret,
+                    "client_secret": reveal(self.settings.client_secret),
                 },
             )
         if response.status_code != 200:

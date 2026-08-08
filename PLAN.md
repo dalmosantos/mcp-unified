@@ -121,7 +121,7 @@ Como os dois consumidores querem recortes diferentes, `--profile` expande para u
 | Perfil | Toolsets | Tools |
 |---|---|---|
 | `ide` (padrão) | `fullstory-core`, `datadog-core`, `correlation` | 32 |
-| `sre-agent` | `datadog-core`, `datadog-rum`, `servicenow`, `msgraph`, `fullstory-core`, `correlation` | 51 |
+| `sre-agent` | `datadog-core`, `datadog-rum`, `datadog-product-analytics`, `servicenow`, `msgraph`, `fullstory-core`, `correlation` | 54 |
 | `all` | tudo | 73 |
 
 `SAFE_MODE=true` força só os grupos de leitura, independente do perfil.
@@ -467,7 +467,7 @@ async def m(p):
 for p in ('ide', 'sre-agent', 'all'):
     asyncio.run(m(p))
 "
-# espera: ide -> 32, sre-agent -> 51, all -> 73
+# espera: ide -> 32, sre-agent -> 54, all -> 73
 
 # 3. Degradação: sem credencial de ServiceNow o servidor sobe mesmo assim
 env -u SNOW_INSTANCE .venv/bin/python -c "..."
@@ -491,28 +491,16 @@ docker compose --profile local-llm up -d
 
 ## Como executar na IDE
 
-Registrar em `.mcp.json` na raiz do projeto (ou via `claude mcp add`). Duas formas, ambas stdio:
+> **Superseded.** O registro previsto aqui era um `.mcp.json` só, com as
+> credenciais no bloco `env`. Na prática o time usa seis clientes diferentes, e
+> cada um injeta segredo de um jeito — ou de nenhum. O desenho final trocou o
+> bloco `env` por `--env-file` e versionou uma configuração por cliente. O que
+> vale hoje está em [`docs/ide-setup.md`](docs/ide-setup.md); o fluxo, em
+> [`docs/arquitetura.md`](docs/arquitetura.md).
 
-**A. venv nativo** — mais rápido de iterar:
-```json
-{ "mcpServers": { "mcp-unified": {
-  "command": "/home/admin/projects/mcp-unified/.venv/bin/mcp-unified",
-  "args": ["--profile", "ide"],
-  "env": { "FULLSTORY_API_KEY": "...", "DD_API_KEY": "...", "DD_APP_KEY": "..." }
-}}}
-```
-
-**B. Docker** — ambiente isolado e reprodutível:
-```json
-{ "mcpServers": { "mcp-unified": {
-  "command": "docker",
-  "args": ["run", "-i", "--rm",
-           "--env-file", "/home/admin/projects/mcp-unified/.env",
-           "mcp-unified", "--profile", "ide"]
-}}}
-```
-
-Três detalhes que quebram o registro por Docker, e que o README precisa dizer:
+Duas formas, ambas stdio: venv nativo (mais rápido de iterar) ou Docker
+(ambiente isolado e reprodutível). Três detalhes quebram o registro por Docker,
+e o README precisa dizer:
 - **`-i` é obrigatório.** Sem ele o stdin fecha e o servidor encerra sem erro útil.
 - **`--rm`** evita acumular container morto por sessão da IDE.
 - **Nada pode ir para o stdout além do protocolo.** Todo log vai para stderr — um `print()` esquecido corrompe a sessão MCP.

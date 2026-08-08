@@ -1,0 +1,14 @@
+{
+  "servers": {
+    "mcp-unified": {
+      "type": "stdio",
+      "command": "mcp-unified",
+      "args": [
+        "--profile",
+        "sre-agent",
+        "--env-file",
+        "${workspaceFolder}/.env"
+      ]
+    }
+  }
+}

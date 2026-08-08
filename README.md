@@ -4,13 +4,29 @@ Servidor MCP que unifica **FullStory**, **Datadog**, **ServiceNow** e **Microsof
 numa só superfície, com tools de correlação que cruzam a sessão do usuário com a
 telemetria de backend.
 
-> Documentação de planejamento: [`PLAN.md`](PLAN.md) · [`sre-agente-autonomo.md`](sre-agente-autonomo.md)
+## Documentação
+
+| Documento | Responde |
+|---|---|
+| [`docs/ide-setup.md`](docs/ide-setup.md) | "como ligo isso na minha IDE?" — VS Code, Copilot, Windsurf, Antigravity, Claude Code, Devin |
+| [`docs/arquitetura.md`](docs/arquitetura.md) | "como funciona por dentro?" — camadas e fluxo na IDE, no CLI e como agente |
+| [`AGENTS.md`](AGENTS.md) | "vou mexer no código" — invariantes, convenções, como estender |
+| [`PLAN.md`](PLAN.md) | "por que foi feito assim?" — registro das decisões de projeto |
+| [`sre-agente-autonomo.md`](sre-agente-autonomo.md) | "para onde isso vai?" — o agente autônomo que consome este servidor |
 
 ## Por que
 
 FullStory responde *"o que o usuário fez na tela"*. Datadog responde *"o que o backend fez"*.
-Usados separados, quem investiga copia timestamps e IDs de um para o outro na mão.
-Este servidor faz esse cruzamento como tool.
+Usados separados, quem investiga copia timestamps e IDs de um para o outro na mão:
+
+```
+FullStory  14:31:00  click "Confirmar transferência"        ─┐
+                                                             │  quem cruza
+Datadog    14:31:09  timeout ao consultar SPI               ─┘  é você, na mão
+```
+
+Este servidor faz esse cruzamento como tool: uma chamada, uma timeline só, na
+ordem certa. O fluxo completo está em [`docs/arquitetura.md`](docs/arquitetura.md).
 
 ## Instalação
 
@@ -26,17 +42,17 @@ toolset** e a correlação segue com as fontes restantes — o servidor sobe do 
 ## Uso
 
 ```bash
-mcp-unified --profile ide                     # stdio, para a IDE
+mcp-unified --profile sre-agent --env-file .env          # stdio, para a IDE
 mcp-unified --transport streamable-http --profile sre-agent --port 8080
-mcp-unified --list-tools                      # inspeciona a seleção sem subir o servidor
+mcp-unified --list-tools                                 # inspeciona a seleção sem subir o servidor
 ```
 
 ### Perfis
 
 | Perfil | Tools | Toolsets | Para quem |
 |---|---|---|---|
-| `ide` (padrão) | 32 | `fullstory-core`, `datadog-core`, `correlation` | investigação interativa |
-| `sre-agent` | 51 | + `datadog-rum`, `servicenow`, `msgraph` | agente autônomo |
+| `ide` (padrão) | 32 | `fullstory-core`, `datadog-core`, `correlation` | contexto apertado |
+| `sre-agent` | 54 | + `datadog-rum`, `datadog-product-analytics`, `servicenow`, `msgraph` | o que as cinco skills precisam — e o padrão das configurações de IDE |
 | `all` | 73 | tudo | inspeção e testes |
 
 As contagens valem com **todos** os provedores configurados. Sem credencial, as
@@ -46,22 +62,35 @@ tools daquele provedor simplesmente não são registradas.
 
 ## Registro na IDE
 
-`.mcp.json` na raiz do projeto:
+**Guia completo por IDE — VS Code, GitHub Copilot, Windsurf, Antigravity, Claude
+Code, Devin CLI, Devin Desktop e Devin na nuvem:
+[`docs/ide-setup.md`](docs/ide-setup.md).**
+
+Quatro configurações já estão versionadas e são lidas sem nenhum passo manual:
+[`.mcp.json`](.mcp.json) (Claude Code), [`.vscode/mcp.json`](.vscode/mcp.json)
+(VS Code e Copilot), [`.agents/mcp_config.json`](.agents/mcp_config.json)
+(Antigravity) e [`.devin/mcp_config.json`](.devin/mcp_config.json) (Devin CLI).
+A forma geral:
 
 ```json
 { "mcpServers": { "mcp-unified": {
-  "command": "/caminho/para/.venv/bin/mcp-unified",
-  "args": ["--profile", "ide"],
-  "env": { "FULLSTORY_API_KEY": "...", "DD_API_KEY": "...", "DD_APP_KEY": "..." }
+  "command": "mcp-unified",
+  "args": ["--profile", "sre-agent", "--env-file", ".env"]
 }}}
 ```
 
-Ou via Docker:
+`--env-file` em vez do bloco `env` porque cada cliente injeta segredo com uma
+sintaxe própria — ou nenhuma — e o diretório de trabalho do processo lançado é
+imprevisível. Um caminho explícito funciona igual nos cinco, e falha alto
+quando está errado, em vez de subir com todos os toolsets desabilitados.
+
+Ou via Docker, para quem não quer instalar o Python:
 
 ```json
 { "mcpServers": { "mcp-unified": {
   "command": "docker",
-  "args": ["run", "-i", "--rm", "--env-file", "/caminho/.env", "mcp-unified", "--profile", "ide"]
+  "args": ["run", "-i", "--rm", "--env-file", "/caminho/.env", "mcp-unified",
+           "--profile", "sre-agent"]
 }}}
 ```
 
@@ -72,6 +101,25 @@ Três detalhes que costumam quebrar o registro por Docker:
 - **Nada pode ir para o stdout além do protocolo.** Todo log vai para stderr; um
   `print()` esquecido corrompe a sessão MCP.
 
+### De onde vêm as credenciais
+
+```
+variável de ambiente                              ← ganha de todos
+    ▲   --secrets-dir   /run/secrets/DD_API_KEY   um arquivo por credencial
+    │   --env-file      .env                      texto plano, só em dev
+    │   default do código
+```
+
+Em texto plano num `.env` basta para a máquina de um desenvolvedor. Não basta
+para o modo HTTP, onde o servidor é um processo de vida longa e compartilhada:
+ali use `--secrets-dir`, que lê o formato que Docker e Kubernetes montam em
+`/run/secrets` — e que, ao contrário de variável de ambiente, não aparece em
+`docker inspect`. O [`docker-compose.yml`](docker-compose.yml) tem o bloco
+pronto, comentado.
+
+O cofre ganha do `.env` de propósito, invertendo o padrão do `pydantic-settings`
+— o porquê está em [`docs/arquitetura.md`](docs/arquitetura.md#de-onde-vêm-as-credenciais).
+
 ## Como testar localmente
 
 Cinco níveis, do que funciona sem nada até o uso real.
@@ -79,7 +127,7 @@ Cinco níveis, do que funciona sem nada até o uso real.
 ### 1. Suíte de testes — sem credencial, sem rede
 
 ```bash
-.venv/bin/pytest -q          # 91 testes
+.venv/bin/pytest -q          # 111 testes
 .venv/bin/ruff check src/ tests/
 ```
 
@@ -183,14 +231,19 @@ Para exercitar o retry:
 
 ### 4. Na IDE
 
+As configurações versionadas já bastam — veja [`docs/ide-setup.md`](docs/ide-setup.md)
+para o passo a passo de cada uma. No Claude Code, `/mcp` confirma que as tools
+apareceram.
+
+Para experimentar sem conta real, aponte o `.env` para o modo demo:
+
 ```bash
-claude mcp add mcp-unified -- /caminho/para/.venv/bin/mcp-unified --profile ide
+FULLSTORY_BASE_URL=http://127.0.0.1:8931
+DD_BASE_URL=http://127.0.0.1:8931
 ```
 
-Ou o `.mcp.json` da seção acima. Depois, `/mcp` no Claude Code confirma que as
-tools apareceram. Para experimentar sem conta real, use o modo demo: aponte o
-`env` do `.mcp.json` para `http://127.0.0.1:8931` com as variáveis
-`FULLSTORY_BASE_URL` e `DD_BASE_URL`.
+Como o `--env-file` é o mesmo em todos os clientes, isso vale para qualquer IDE
+sem editar a configuração dela.
 
 ### 5. Com credenciais reais
 
@@ -231,7 +284,7 @@ printf '%s\n' \
 
 ## Skills de SRE
 
-Três skills em [`skills/`](skills/) ensinam um agente a usar bem as 73 tools —
+Cinco skills em [`skills/`](skills/) ensinam um agente a usar bem as 73 tools —
 qual escolher para qual pergunta, e quais armadilhas evitar. A divisão é por
 **pergunta**, não por provedor:
 
@@ -239,13 +292,24 @@ qual escolher para qual pergunta, e quais armadilhas evitar. A divisão é por
 |---|---|
 | [`sre-triage`](skills/sre-triage/SKILL.md) | "o monitor disparou, o que está acontecendo?" |
 | [`sre-user-impact`](skills/sre-user-impact/SKILL.md) | "quem foi afetado e o que a pessoa viveu?" |
+| [`sre-business-impact`](skills/sre-business-impact/SKILL.md) | "qual o impacto no negócio?" — traduz para gerência e product analytics |
 | [`sre-postmortem`](skills/sre-postmortem/SKILL.md) | "como registro isso para a próxima vez?" |
 | [`sre-setup`](skills/sre-setup/SKILL.md) | "por que voltou vazio?" — distingue configuração de ausência de dado |
+
+Juntas elas exigem o perfil `sre-agent`: `sre-business-impact` depende de
+Product Analytics e RUM, que o perfil `ide` não registra.
 
 ### Instalação como plugin
 
 O repositório é um plugin: `.claude-plugin/` + `.mcp.json` + `skills/` +
-`agents/`. Instalar traz o servidor configurado e as quatro skills de uma vez.
+`agents/`. Instalar traz o servidor configurado, as cinco skills e o subagente
+de uma vez.
+
+As skills não são exclusivas do Claude Code: elas também estão expostas em
+`.agents/skills/` — o padrão que **Devin CLI** e **Antigravity** leem — como
+links simbólicos para `skills/`, sem cópia a manter em sincronia. VS Code,
+Copilot, Windsurf e Devin Desktop carregam as tools, mas não as skills. A
+tabela completa está em [`docs/ide-setup.md`](docs/ide-setup.md).
 
 ```bash
 /plugin marketplace add dalmosantos/mcp-unified
