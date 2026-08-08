@@ -148,8 +148,11 @@ propósito. `test_cofre_ganha_do_env_file` guarda isso.
 
 Todo campo de credencial em `config.py` é `SecretStr` — `str()` e `repr()`
 devolvem `**********`, então log e traceback ficam protegidos por padrão.
-`config.reveal()` é o único ponto onde o valor real aparece; se você precisou
-dela fora de um cliente HTTP, pare e releia o que está fazendo.
+`config.reveal()` é o único ponto onde o valor real aparece, e só é legítima
+**na fronteira em que a credencial é entregue ao upstream**: montando header
+em `providers/*/client.py`, ou passando a chave ao construtor de um provedor
+em `llm/base.py`. Precisou dela em qualquer outro lugar — sobretudo perto de
+`logger`, de `repr` ou de um payload de resposta — pare e releia.
 
 O preço disso é um erro fácil na direção oposta: interpolar o campo direto numa
 f-string manda `**********` para o upstream, e o sintoma é um 403 que parece

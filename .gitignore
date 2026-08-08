@@ -4,6 +4,12 @@
 # Segredos montados como arquivo (--secrets-dir). Um arquivo por credencial,
 # com o nome da variável: secrets/DD_API_KEY
 secrets/
+
+# Configuração de escopo local dos clientes MCP: sobrescreve a versionada e é
+# pessoal por definição. A do Devin costuma carregar credencial; a do Claude
+# Code carrega permissões concedidas na máquina de quem usa.
+.devin/mcp_config.local.json
+.claude/settings.local.json
 .venv/
 __pycache__/
 *.py[cod]

@@ -202,7 +202,7 @@ def test_plugin_e_marketplace_concordam():
 
 @pytest.mark.parametrize("rel,chave", sorted(IDE_CONFIGS.items()))
 def test_config_de_ide_aponta_para_o_perfil_certo(rel: str, chave: str):
-    """As três configurações versionadas precisam concordar entre si.
+    """As quatro configurações versionadas precisam concordar entre si.
 
     Divergir aqui é caro: o time descobre pela ausência de tools no meio de um
     incidente, não por um erro na subida.

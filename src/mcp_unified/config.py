@@ -23,9 +23,13 @@ def reveal(value: SecretStr | None) -> str:
     Toda credencial é `SecretStr`, cujo `str()` e `repr()` devolvem
     `**********`. Isso protege log e traceback por padrão, mas cobra o preço
     de quebrar em silêncio quem interpolar o campo direto numa f-string — o
-    header sairia com os asteriscos dentro. Esta função é o único ponto onde o
-    valor real aparece; se você precisou dela fora de um cliente HTTP, pare e
-    releia o que está fazendo.
+    header sairia com os asteriscos dentro.
+
+    Esta função é o único ponto onde o valor real aparece, e só é legítima na
+    fronteira em que a credencial é entregue ao upstream: montando header em
+    `providers/*/client.py`, ou passando a chave ao construtor de um provedor
+    em `llm/base.py`. Precisou dela em qualquer outro lugar — sobretudo perto
+    de `logger`, de `repr` ou de um payload de resposta — pare e releia.
     """
     return value.get_secret_value() if value else ""
 

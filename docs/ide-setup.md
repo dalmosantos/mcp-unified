@@ -39,9 +39,19 @@ de trabalho do processo que a IDE lança é imprevisível, e um `.env` não
 encontrado desabilitaria todos os toolsets sem dizer por quê. Com `--env-file`,
 um caminho errado falha na hora, com a mensagem certa.
 
-Se a sua IDE lançar o servidor de outro diretório, troque `.env` pelo caminho
-absoluto — é a correção para praticamente qualquer sintoma de "as tools
-aparecem, mas tudo volta vazio".
+**Relativo ou absoluto — depende do escopo da configuração**, e é por isso que
+as versionadas não são todas iguais:
+
+| Escopo | Caminho | Por quê |
+|---|---|---|
+| projeto (`.mcp.json`, `.agents/`, `.devin/`) | `.env` relativo | o cliente lança o servidor com o diretório de trabalho no raiz do projeto |
+| projeto, VS Code | `${workspaceFolder}/.env` | é o único cliente que expande a variável, então dá para ser absoluto de graça |
+| global (Windsurf, Devin Desktop) | absoluto, obrigatório | a configuração não pertence a projeto nenhum |
+
+Se as tools aparecem mas tudo volta vazio, é quase sempre isto: o servidor
+subiu de outro diretório e não achou o `.env`. Trocar pelo caminho absoluto
+resolve, e `--list-tools` confirma antes — ele diz quais provedores ficaram
+desabilitados e por quê.
 
 ---
 
