@@ -15,8 +15,9 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="mcp-unified",
         description=(
-            "Servidor MCP unificado sobre FullStory, Datadog, ServiceNow e Microsoft Graph, "
-            "com correlação entre sessão de usuário e telemetria de backend."
+            "Servidor MCP unificado sobre FullStory, Datadog, ServiceNow e "
+            "SharePoint + Teams (via Microsoft Graph), com correlação entre "
+            "sessão de usuário e telemetria de backend."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(

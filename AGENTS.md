@@ -10,8 +10,9 @@ lugar. Este arquivo é sobre mexer no código.
 ## O que é o projeto
 
 Servidor MCP em Python que unifica quatro fontes de dados operacionais —
-FullStory, Datadog, ServiceNow e Microsoft Graph — e expõe tools de correlação
-que cruzam a sessão do usuário no frontend com a telemetria de backend.
+FullStory, Datadog, ServiceNow e SharePoint + Teams (via Microsoft Graph) — e
+expõe tools de correlação que cruzam a sessão do usuário no frontend com a
+telemetria de backend.
 
 Duas topologias: **stdio** (seis clientes hoje — Claude Code, VS Code, Copilot,
 Windsurf, Antigravity, Devin CLI) e **HTTP**, para o agente autônomo de SRE
@@ -319,5 +320,11 @@ Fora de escopo por decisão, não por falta de tempo:
   agente e vive no projeto de SRE. O MCP expõe dados; quem decide é o cliente.
 - Escrita em ServiceNow ou Microsoft Graph — read-only até que haja revisão
   específica.
+- O resto do ecossistema Microsoft. O provedor `msgraph` é SharePoint + Teams,
+  e só. Power Platform (PowerApps, Power Automate, Dataverse), Exchange/Outlook
+  e Entra ID não passam pelo mesmo endpoint nem pelos mesmos escopos que
+  `graph.microsoft.com/v1.0`; cada um seria um provedor novo, com cliente
+  próprio. Se aparecer a necessidade, o caminho é `providers/<nome>/` — não
+  esticar o `msgraph`.
 - O resto do fs-lexicon: webhooks, Slack, Snowflake, BigQuery, Atlassian.
 - Redis no rate limiting (a interface está pronta para plugar).

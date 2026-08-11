@@ -1,8 +1,13 @@
 # mcp-unified
 
-Servidor MCP que unifica **FullStory**, **Datadog**, **ServiceNow** e **Microsoft Graph**
-numa só superfície, com tools de correlação que cruzam a sessão do usuário com a
-telemetria de backend.
+Servidor MCP que unifica **FullStory**, **Datadog**, **ServiceNow** e
+**SharePoint + Teams** (via Microsoft Graph) numa só superfície, com tools de
+correlação que cruzam a sessão do usuário com a telemetria de backend.
+
+O provedor Microsoft cobre exatamente dois produtos — documentos do SharePoint e
+mensagens de canal do Teams. Não é "o ecossistema Microsoft": Power Platform
+(PowerApps, Power Automate, Dataverse), Exchange/Outlook e Entra ID ficam de
+fora, porque vivem em APIs diferentes do Graph e entrariam como outro provedor.
 
 ## Documentação
 
@@ -10,6 +15,7 @@ telemetria de backend.
 |---|---|
 | [`docs/ide-setup.md`](docs/ide-setup.md) | "como ligo isso na minha IDE?" — VS Code, Copilot, Windsurf, Antigravity, Claude Code, Devin |
 | [`docs/arquitetura.md`](docs/arquitetura.md) | "como funciona por dentro?" — camadas e fluxo na IDE, no CLI e como agente |
+| [`docs/runbook.md`](docs/runbook.md) | "quebrou, e agora?" — procedimentos indexados por assinatura de falha |
 | [`AGENTS.md`](AGENTS.md) | "vou mexer no código" — invariantes, convenções, como estender |
 | [`PLAN.md`](PLAN.md) | "por que foi feito assim?" — registro das decisões de projeto |
 | [`sre-agente-autonomo.md`](sre-agente-autonomo.md) | "para onde isso vai?" — o agente autônomo que consome este servidor |

@@ -46,7 +46,7 @@ você digita e a resposta que volta.
 └───────────────────────────┬──────────────────────────────────┘
                             │  HTTPS
                             ▼
-        FullStory · Datadog · ServiceNow · Microsoft Graph
+   FullStory · Datadog · ServiceNow · SharePoint + Teams (MS Graph)
 ```
 
 A seta entre `correlation/` e `providers/` aponta para dentro da correlação de
